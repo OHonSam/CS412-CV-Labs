@@ -123,8 +123,8 @@ void onHarrisTrackbar(int, void* userData) {
     // 2. Run Harris
     cv::Mat dst, dst_norm;
 
-    cv::cornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
-    // myCornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+    // cv::cornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+    myCornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
 
     // Normalize the result to 0-255 range
     cv::normalize(dst, dst_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat());
@@ -210,14 +210,50 @@ void detectHarrisCamera() {
     delete ctx;
 }
 
-void detectBlob(const std::string& imagePath) {
-    cv::Mat img = cv::imread(imagePath, cv::IMREAD_COLOR);
-    if (img.empty()) { std::cerr << "Could not read image: " << imagePath << std::endl; return; }
+void onBlobTrackbar(int, void* userData) {
+    BlobContext* blobContext = static_cast<BlobContext*>(userData);
+    if (blobContext->src.empty()) return;
 
-    // TODO: Implement Blob logic here
-    cv::imshow("Blob", img);
+    cv::SimpleBlobDetector::Params blobParams;
+
+    blobParams.filterByArea = blobContext->filterByArea;
+    blobParams.filterByCircularity = blobContext->filterByCircularity;
+    blobParams.filterByConvexity = blobContext->filterByConvexity;
+    blobParams.filterByInertia = blobContext->filterByInertia;
+    blobParams.minThreshold = blobContext->minThreshold;
+    blobParams.maxThreshold = blobContext->maxThreshold;
+    blobParams.thresholdStep = blobContext->thresholdStep;
+
+    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(blobParams);
+    std::vector<cv::KeyPoint> keypoints;
+    detector->detect(blobContext->gray, keypoints);
+
+    cv::Mat result = blobContext->src.clone();
+    cv::drawKeypoints(blobContext->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+
+    cv::imshow("Blob Detection", result);
+}
+
+void detectBlob(const std::string& imagePath) {
+    BlobContext* blobContext = new BlobContext;
+
+    std::string windowName = "Blob Detection";
+    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+
+    blobContext->src = cv::imread(imagePath, cv::IMREAD_COLOR);
+    if (blobContext->src.empty()) { std::cerr << "Could not read image: " << imagePath << std::endl; return; }
+
+    cv::cvtColor(blobContext->src, blobContext->gray, cv::COLOR_BGR2GRAY);
+
+    cv::createTrackbar("Min Threshold", windowName, &blobContext->minThreshold, 255, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Max Threshold", windowName, &blobContext->maxThreshold, 255, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Threshold Step", windowName, &blobContext->thresholdStep, 10, onBlobTrackbar, blobContext);
+
+    onBlobTrackbar(0, blobContext);
+
     cv::waitKey(0);
     cv::destroyAllWindows();
+    delete blobContext;
 }
 
 void detectBlobCamera() {
@@ -226,20 +262,29 @@ void detectBlobCamera() {
         std::cerr << "Error: Could not open camera" << std::endl;
         return;
     }
+    
+    std::string windowName = "Blob Detection";
+    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+
+    BlobContext* blobContext = new BlobContext();
+
+    cv::createTrackbar("Min Threshold", windowName, &blobContext->minThreshold, 255, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Max Threshold", windowName, &blobContext->maxThreshold, 255, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Threshold Step", windowName, &blobContext->thresholdStep, 10, onBlobTrackbar, blobContext);
 
     cv::Mat frame;
     while (true) {
         cap >> frame;
         if (frame.empty()) break;
 
-        std::string imagePath = "camera_frame.jpg";
-        cv::imwrite(imagePath, frame);
+        // 2. Update Context with the new frame
+        blobContext->src = frame;
+        cv::cvtColor(blobContext->src, blobContext->gray, cv::COLOR_BGR2GRAY);
 
-        // Call the Blob detection function
-        detectBlob(imagePath);
+        // 3. Process and Display
+        onBlobTrackbar(0, blobContext);
 
-        cv::imshow("Blob", frame);
-        if (cv::waitKey(30) >= 0) break;
+        if (cv::waitKey(30) >= 27) break;
     }
 
     cap.release();

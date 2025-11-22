@@ -16,6 +16,24 @@ struct HarrisContext {
     int max_harris_threshold = 255;
 };
 
+struct BlobContext {
+    cv::Mat src;
+    cv::Mat gray;
+    // Thresholds
+    int minThreshold = 10;
+    int maxThreshold = 200;
+    int thresholdStep = 10;
+    
+    // Filtering (Enable these to filter noise)
+    bool filterByArea = true;
+    int minArea = 100;         // Trackbar variable
+    int maxArea = 10000;
+    
+    bool filterByCircularity = false;
+    bool filterByConvexity = false;
+    bool filterByInertia = false;
+};
+
 // UI and Helper functions
 void displayHelp();
 void openCamera();
