@@ -65,6 +65,48 @@ void openCamera() {
     cv::destroyAllWindows();
 }
 
+void myCornerHarris(cv::Mat& srcGray, cv::Mat& dst, int blockSize, int apertureSize, double k) {
+    blockSize = (blockSize / 2) * 2 + 1; // Force odd (e.g., 2 -> 3)
+    if (blockSize < 3) blockSize = 3;    // Minimum size 3
+    dst = cv::Mat::zeros(srcGray.size(), CV_32FC1);
+
+    // 1. Compute gradients Ix and Iy using Sobel operator
+    cv::Mat Ix, Iy;
+    cv::Sobel(srcGray, Ix, CV_32F, 1, 0, apertureSize);
+    cv::Sobel(srcGray, Iy, CV_32F, 0, 1, apertureSize);
+
+    // 2. Compute products of derivatives
+    cv::Mat Ix2 = Ix.mul(Ix);
+    cv::Mat Iy2 = Iy.mul(Iy);
+    cv::Mat Ixy = Ix.mul(Iy);
+
+    // 3. Apply Gaussian filter to the derivative products
+    // Weighted sum to see gradient changes in multiple directions instead of gradient at a single pixel
+    cv::Mat Sx2, Sy2, Sxy;
+    cv::GaussianBlur(Ix2, Sx2, cv::Size(blockSize, blockSize), 2);
+    cv::GaussianBlur(Iy2, Sy2, cv::Size(blockSize, blockSize), 2);
+    cv::GaussianBlur(Ixy, Sxy, cv::Size(blockSize, blockSize), 2);
+
+    // 4. Compute Harris Response R for every pixel
+    // M = [ Sx2  Sxy ]
+    //     [ Sxy  Sy2 ]
+    // R = det(M) - k * (trace(M))^2
+    // det(M) = Sx2 * Sy2 - Sxy^2
+    // trace(M) = Sx2 + Sy2
+    for (int y = 0; y < srcGray.rows; y++) {
+        for (int x = 0; x < srcGray.cols; x++) {
+            float Sx2_val = Sx2.at<float>(y, x);
+            float Sy2_val = Sy2.at<float>(y, x);
+            float Sxy_val = Sxy.at<float>(y, x);
+
+            float detM = (Sx2_val * Sy2_val) - (Sxy_val * Sxy_val);
+            float traceM = Sx2_val + Sy2_val;
+
+            dst.at<float>(y, x) = detM - k * (traceM * traceM);
+        }
+    }
+}
+
 void onHarrisTrackbar(int, void* userData) {
     HarrisContext* ctx = static_cast<HarrisContext*>(userData);
 
@@ -81,7 +123,9 @@ void onHarrisTrackbar(int, void* userData) {
     // 2. Run Harris
     cv::Mat dst, dst_norm;
 
-    cv::cornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+    // cv::cornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+    myCornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+    
     // Normalize the result to 0-255 range
     cv::normalize(dst, dst_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat());
 
@@ -153,4 +197,241 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
     std::cout << "Matching " << img1Path << " and " << img2Path << std::endl;
     std::cout << "Detector: " << detectorType << ", Descriptor: " << descriptorType << std::endl;
     // TODO: Implement matching logic
+}
+
+cv::Mat createGaussianFilter(int size) { 
+    // https://docs.opencv.org/2.4/modules/imgproc/doc/filtering.html#getgaussiankernel 
+    float sigma = 0.3 * ((size - 1) * 0.5 -1) + 0.8;
+    float alpha = 0.0f;
+    int centerIdx = (size - 1) / 2;
+
+    cv::Mat kernel = cv::Mat(size, size, CV_32F, cv::Scalar(1));
+
+    for (int row = 0; row < size; ++row) { 
+        for (int col = 0; col < size; ++col) { 
+            int dy = row - centerIdx;
+            int dx = col - centerIdx;
+
+            // https://en.wikipedia.org/wiki/Gaussian_filter 
+            // https://en.wikipedia.org/wiki/Gaussian_blur 
+            
+            float value = exp(-(dy*dy + dx*dx)/(2.0f * sigma * sigma));
+            kernel.at<float>(row, col) = value;
+            alpha += value;
+        }
+    } 
+    
+    // Normalize 
+    for (int row = 0; row < size; ++row) { 
+        for (int col = 0; col < size; ++col) { 
+            kernel.at<float>(row, col) /= alpha;
+        } 
+    } 
+    return kernel;
+} 
+
+cv::Mat applyConvolution(const cv::Mat& src, const cv::Mat& kernel) { 
+    int imRows = src.rows;
+    int imCols = src.cols;
+    
+    int kerRows = kernel.rows;
+    int kerCols = kernel.cols;
+    int kerCenterY = (kerRows - 1)/2;
+    int kerCenterX = (kerCols - 1)/2;
+
+    cv::Mat dst = cv::Mat(imRows, imCols, src.type(), cv::Scalar(1));
+
+    for (int imRow = 0; imRow < imRows; ++imRow) { 
+        for (int imCol = 0; imCol < imCols; ++imCol) { 
+            // Use zero paddings so [col][row] will be at the center of kernel 
+            if (src.channels() == 1) { 
+                float value = 0.0f;
+
+                for (int kerRow = 0; kerRow < kerRows; ++kerRow) { 
+                    for (int kerCol = 0; kerCol < kerCols; ++kerCol) { 
+                        int i = imRow + (kerRow - kerCenterY);
+                        int j = imCol + (kerCol - kerCenterX);
+                        
+                        if (i < 0 || i >= imRows || j < 0 || j >= imCols) { 
+                            continue;
+                        } 
+                        
+                        value += src.at<uchar>(i, j) * kernel.at<float>(kerRow, kerCol);
+                    } 
+                } 
+                
+                // dst.at<float>(imRow, imCol) = value;
+
+                // Clamp to valid range [0, 255]. Working with standard images (imread/imwrite) Displaying results with imshow() 
+                dst.at<uchar>(imRow, imCol) = cv::saturate_cast<uchar>(value);
+            } 
+            else if (src.channels() == 3) { 
+                float valueB = 0.0f, valueG =0.0f, valueR = 0.0f;
+                
+                for (int kerRow = 0; kerRow < kerRows; ++kerRow) { 
+                    for (int kerCol = 0; kerCol < kerCols; ++kerCol) { 
+                        int i = imRow + (kerRow - kerCenterY);
+                        int j = imCol + (kerCol - kerCenterX);
+
+                        if (i < 0 || i >= imRows || j < 0 || j >= imCols) { 
+                            continue;
+                        } 
+                        
+                        float kerValue = kernel.at<float>(kerRow, kerCol);
+
+                        cv::Vec3b imPixel = src.at<cv::Vec3b>(i, j);
+                        valueB += imPixel[0] * kerValue;
+                        valueG += imPixel[1] * kerValue;
+                        valueR += imPixel[2] * kerValue;
+                    } 
+                } 
+                
+                // dst.at<Vec3b>(imRow, imCol) =Vec3b(valueB, valueG, valueR);
+
+                // Clamp to valid range [0, 255] 
+                dst.at<cv::Vec3b>(imRow, imCol) = cv::Vec3b( 
+                    cv::saturate_cast<uchar>(valueB), 
+                    cv::saturate_cast<uchar>(valueG), 
+                    cv::saturate_cast<uchar>(valueR) 
+                );
+            } 
+        } 
+    } 
+    
+    return dst;
+} 
+
+std::vector<float> createAverageFilter1D(int size) { 
+    return std::vector<float>(size, 1.0f / size);
+} 
+
+std::vector<float> createGaussianFilter1D(int size) { 
+    float sigma = 0.3 * ((size - 1) * 0.5 -1) + 0.8;
+    float alpha = 0.0f;
+    int centerIdx = (size - 1) / 2;
+
+    std::vector<float> kernel(size);
+
+    for (int i = 0; i < size; ++i) { 
+        int d = i - centerIdx;
+        float value = exp(-(d * d) / (2.0f * sigma * sigma));
+        kernel[i] = value;
+        alpha += value;
+    } 
+    
+    for (int i = 0; i < size; ++i) { 
+        kernel[i] /= alpha;
+    } 
+    
+    return kernel;
+} 
+
+cv::Mat applyVerticalConvolution1D(const cv::Mat& src, const std::vector<float>& verticalKernel1D) { 
+    int imRows = src.rows;
+    int imCols = src.cols;
+
+    int kerRows = verticalKernel1D.size();
+    int kerCenterY = (kerRows - 1)/2;
+
+    cv::Mat dst = cv::Mat(imRows, imCols, src.type(), cv::Scalar(1));
+
+    for (int imRow = 0; imRow < imRows; ++imRow) { 
+        for (int imCol = 0; imCol < imCols; ++imCol) { 
+            // Use zero paddings so [col][row] will be at the center of kernel 
+            if (src.channels() == 1) { 
+                float value = 0.0f;
+
+                for (int kerRow = 0; kerRow < kerRows; ++kerRow) { 
+                    int i = imRow + (kerRow - kerCenterY);
+
+                    if (i < 0 || i >= imRows) { 
+                        continue;
+                    } 
+                    
+                    value += src.at<uchar>(i, imCol) * verticalKernel1D[kerRow];
+                } 
+                
+                dst.at<float>(imRow, imCol) = value;
+            } 
+            else if (src.channels() == 3) { 
+                float valueB = 0.0f, valueG =0.0f, valueR = 0.0f;
+
+                for (int kerRow = 0; kerRow < kerRows; ++kerRow) { 
+                    int i = imRow + (kerRow - kerCenterY);
+                    if (i < 0 || i >= imRows) { 
+                        continue;
+                    } 
+                    
+                    float kerValue = verticalKernel1D[kerRow];
+
+                    cv::Vec3b imPixel = src.at<cv::Vec3b>(i, imCol);
+                    valueB += imPixel[0] * kerValue;
+                    valueG += imPixel[1] * kerValue;
+                    valueR += imPixel[2] * kerValue;
+
+                } 
+
+                dst.at<cv::Vec3b>(imRow, imCol) = cv::Vec3b(valueB, valueG, valueR);
+            } 
+        } 
+    } 
+    return dst;
+} 
+
+cv::Mat applyHorizontalConvolution1D(const cv::Mat& src, const std::vector<float>& horizontalKernel1D) { 
+    int imRows = src.rows;
+    int imCols = src.cols;
+    int kerCols = horizontalKernel1D.size();
+    int kerCenterX = (kerCols - 1)/2;
+
+    cv::Mat dst = cv::Mat(imRows, imCols, src.type(), cv::Scalar(1));
+
+    for (int imRow = 0; imRow < imRows; ++imRow) { 
+        for (int imCol = 0; imCol < imCols; ++imCol) { 
+            // Use zero paddings so [col][row] will be at the center of kernel 
+            if (src.channels() == 1) { 
+                float value = 0.0f;
+
+                for (int kerCol = 0; kerCol < kerCols; ++kerCol) { 
+                    int j = imCol + (kerCol - kerCenterX);
+
+
+                    if (j < 0 || j >= imCols) { 
+                        continue;
+                    } 
+                    
+                    value += src.at<uchar>(imRow, j) * horizontalKernel1D[kerCol];
+                } 
+                
+                dst.at<float>(imRow, imCol) = value;
+
+            } 
+            else if (src.channels() == 3) { 
+                float valueB = 0.0f, valueG =0.0f, valueR = 0.0f;
+                for (int kerCol = 0; kerCol < kerCols; ++kerCol) { 
+                    int j = imCol + (kerCol - kerCenterX);
+                    
+                    if (j < 0 || j >= imCols) { 
+                        continue;
+                    } 
+                    
+                    float kerValue = horizontalKernel1D[kerCol];
+
+                    cv::Vec3b imPixel = src.at<cv::Vec3b>(imRow, j);
+                    valueB += imPixel[0] * kerValue;
+                    valueG += imPixel[1] * kerValue;
+                    valueR += imPixel[2] * kerValue;
+
+                } 
+
+                dst.at<cv::Vec3b>(imRow, imCol) = cv::Vec3b(valueB, valueG, valueR);
+            } 
+        } 
+    } 
+    
+    return dst;
+} 
+
+cv::Mat applySeparableConvolution(const cv::Mat& src, const std::vector<float>& kernel) { 
+    return applyHorizontalConvolution1D(applyVerticalConvolution1D(src, kernel), kernel);
 }
