@@ -29,9 +29,12 @@ cv::Mat applySeparableConvolution(const cv::Mat& src, const std::vector<float>& 
 
 // Feature Detection functions
 void detectHarris(const std::string& imagePath);
+void detectHarrisCamera();
 void onHarrisTrackbar(int, void* userData);
 void detectBlob(const std::string& imagePath);
+void detectBlobCamera();
 void detectDoG(const std::string& imagePath);
+void detectDoGCamera();
 
 // Matching functions
 void matchFeatures(const std::string& detectorType, const std::string& descriptorType, 

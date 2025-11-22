@@ -123,9 +123,9 @@ void onHarrisTrackbar(int, void* userData) {
     // 2. Run Harris
     cv::Mat dst, dst_norm;
 
-    // cv::cornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
-    myCornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
-    
+    cv::cornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+    // myCornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+
     // Normalize the result to 0-255 range
     cv::normalize(dst, dst_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat());
 
@@ -172,6 +172,44 @@ void detectHarris(const std::string& imagePath) {
     delete ctx;
 }
 
+void detectHarrisCamera() {
+    cv::VideoCapture cap(0);
+    if (!cap.isOpened()) {
+        std::cerr << "Error: Could not open camera" << std::endl;
+        return;
+    }
+
+    std::string windowName = "Harris Corners";
+    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+
+    HarrisContext* ctx = new HarrisContext();
+
+    cv::createTrackbar("Block Size", windowName, &ctx->blockSize, ctx->max_harris_blockSize, onHarrisTrackbar, ctx);
+    cv::createTrackbar("Aperture (Odd)", windowName, &ctx->apertureSize, ctx->max_harris_ksize, onHarrisTrackbar, ctx);
+    cv::createTrackbar("K (x100)", windowName, &ctx->k_x100, ctx->max_harris_k_x100, onHarrisTrackbar, ctx);
+    cv::createTrackbar("Threshold", windowName, &ctx->threshold, ctx->max_harris_threshold, onHarrisTrackbar, ctx);
+
+    cv::Mat frame;
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) break;
+
+        // 2. Update Context with the new frame
+        ctx->src = frame;
+        cv::cvtColor(ctx->src, ctx->gray, cv::COLOR_BGR2GRAY);
+
+        // 3. Process and Display
+        // Call the trackbar callback to run detection on the new frame
+        onHarrisTrackbar(0, ctx);
+
+        if (cv::waitKey(30) == 27) break;
+    }
+
+    cap.release();
+    cv::destroyAllWindows();
+    delete ctx;
+}
+
 void detectBlob(const std::string& imagePath) {
     cv::Mat img = cv::imread(imagePath, cv::IMREAD_COLOR);
     if (img.empty()) { std::cerr << "Could not read image: " << imagePath << std::endl; return; }
@@ -182,6 +220,32 @@ void detectBlob(const std::string& imagePath) {
     cv::destroyAllWindows();
 }
 
+void detectBlobCamera() {
+    cv::VideoCapture cap(0);
+    if (!cap.isOpened()) {
+        std::cerr << "Error: Could not open camera" << std::endl;
+        return;
+    }
+
+    cv::Mat frame;
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) break;
+
+        std::string imagePath = "camera_frame.jpg";
+        cv::imwrite(imagePath, frame);
+
+        // Call the Blob detection function
+        detectBlob(imagePath);
+
+        cv::imshow("Blob", frame);
+        if (cv::waitKey(30) >= 0) break;
+    }
+
+    cap.release();
+    cv::destroyAllWindows();
+}
+
 void detectDoG(const std::string& imagePath) {
     cv::Mat img = cv::imread(imagePath, cv::IMREAD_COLOR);
     if (img.empty()) { std::cerr << "Could not read image: " << imagePath << std::endl; return; }
@@ -189,6 +253,32 @@ void detectDoG(const std::string& imagePath) {
     // TODO: Implement DoG logic here
     cv::imshow("DoG", img);
     cv::waitKey(0);
+    cv::destroyAllWindows();
+}
+
+void detectDoGCamera() {
+    cv::VideoCapture cap(0);
+    if (!cap.isOpened()) {
+        std::cerr << "Error: Could not open camera" << std::endl;
+        return;
+    }
+
+    cv::Mat frame;
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) break;
+
+        std::string imagePath = "camera_frame.jpg";
+        cv::imwrite(imagePath, frame);
+
+        // Call the DoG detection function
+        detectDoG(imagePath);
+
+        cv::imshow("DoG", frame);
+        if (cv::waitKey(30) >= 0) break;
+    }
+
+    cap.release();
     cv::destroyAllWindows();
 }
 

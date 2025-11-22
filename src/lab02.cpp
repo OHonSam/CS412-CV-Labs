@@ -16,14 +16,29 @@ int main(int argc, char** argv) {
     if (command == "h") {
         displayHelp();
     } 
-    else if (command == "harris" && argc >= 3) {
-        detectHarris(argv[2]);
+    else if (command == "harris") {
+        if (argc >= 3) {
+            detectHarris(argv[2]);
+        } else {
+            cout << "No img found. Invoke camera" << endl;
+            detectHarrisCamera();
+        }
     } 
-    else if (command == "blob" && argc >= 3) {
-        detectBlob(argv[2]);
+    else if (command == "blob") {
+        if (argc >= 3) {
+            detectBlob(argv[2]);
+        } else {
+            cout << "No img found. Invoke camera" << endl;
+            detectBlobCamera();
+        }
     } 
-    else if (command == "dog" && argc >= 3) {
-        detectDoG(argv[2]);
+    else if (command == "dog") {
+        if (argc >= 3) {
+            detectDoG(argv[2]);
+        } else {
+            cout << "No img found. Invoke camera" << endl;
+            detectDoGCamera();
+        }
     }
     else if (command == "m" && argc >= 6) {
         // Usage: ./main m <detector> <descriptor> <img1> <img2>
