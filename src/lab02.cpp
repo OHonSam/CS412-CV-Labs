@@ -1,6 +1,10 @@
 #include <iostream>
 #include <string>
-#include "FeatureUtils.hpp"
+#include "Utils.hpp"
+#include "HarrisDetector.hpp"
+#include "BlobDetector.hpp"
+#include "DoGDetector.hpp"
+#include "FeatureMatching.hpp"
 
 using namespace std;
 
