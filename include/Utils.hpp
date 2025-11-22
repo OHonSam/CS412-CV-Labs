@@ -4,9 +4,11 @@
 #include <vector>
 
 
+// Non-Maximum Suppression for keypoints
+std::vector<cv::KeyPoint> keypointNMS(const std::vector<cv::KeyPoint>& keypoints, double minDistance);
+
 // UI and Helper functions
 void displayHelp();
-void openCamera();
 
 // Convolution and Filter functions
 cv::Mat applyConvolution(const cv::Mat& src, const cv::Mat& kernel); 

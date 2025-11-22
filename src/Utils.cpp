@@ -1,6 +1,38 @@
 #include "Utils.hpp" 
 #include <iostream>
 
+std::vector<cv::KeyPoint> keypointNMS(const std::vector<cv::KeyPoint>& keypoints, double minDistance) {
+    // Sort by response strength (descending)
+    std::vector<cv::KeyPoint> sorted = keypoints;
+    std::sort(sorted.begin(), sorted.end(), 
+        [](const cv::KeyPoint& a, const cv::KeyPoint& b) {
+            return a.response > b.response;
+        });
+    
+    std::vector<cv::KeyPoint> result;
+    std::vector<bool> suppressed(sorted.size(), false);
+    
+    for(size_t i = 0; i < sorted.size(); i++) {
+        if(suppressed[i]) continue;
+        
+        result.push_back(sorted[i]);
+        
+        // Suppress nearby keypoints with lower response
+        for(size_t j = i + 1; j < sorted.size(); j++) {
+            if(suppressed[j]) continue;
+            
+            double dx = sorted[i].pt.x - sorted[j].pt.x;
+            double dy = sorted[i].pt.y - sorted[j].pt.y;
+            double dist = sqrt(dx*dx + dy*dy);
+            
+            if(dist < minDistance) {
+                suppressed[j] = true;
+            }
+        }
+    }
+    
+    return result;
+}
 
 void displayHelp() {
     std::cout << "========================================\n" << std::endl;

@@ -1,6 +1,6 @@
 #include "HarrisDetector.hpp" 
+#include "Utils.hpp"
 #include <iostream>
-
 
 void myCornerHarris(cv::Mat& srcGray, cv::Mat& dst, int blockSize, int apertureSize, double k) {
     blockSize = (blockSize / 2) * 2 + 1; // Force odd (e.g., 2 -> 3)
@@ -44,6 +44,20 @@ void myCornerHarris(cv::Mat& srcGray, cv::Mat& dst, int blockSize, int apertureS
     }
 }
 
+std::vector<cv::KeyPoint> getHarrisKeypoints(const cv::Mat& harrisResponse, float threshold) {
+    std::vector<cv::KeyPoint> keypoints;
+    for (int y = 0; y < harrisResponse.rows; y++) {
+        for (int x = 0; x < harrisResponse.cols; x++) {
+            float response = harrisResponse.at<float>(y, x);
+            if (response > threshold) {
+                keypoints.push_back(cv::KeyPoint(cv::Point2f(x, y), 5.f, -1, response));
+            }
+        }
+    }
+    
+    return keypointNMS(keypoints, 10.0); // Apply NMS with a minimum distance of 10 pixels
+}
+
 void onHarrisTrackbar(int, void* userData) {
     HarrisContext* ctx = static_cast<HarrisContext*>(userData);
 
@@ -60,21 +74,17 @@ void onHarrisTrackbar(int, void* userData) {
     // 2. Run Harris
     cv::Mat dst, dst_norm;
 
-    // cv::cornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
-    myCornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+    cv::cornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
+    // myCornerHarris(ctx->gray, dst, safe_block, odd_aperture, k);
 
     // Normalize the result to 0-255 range
     cv::normalize(dst, dst_norm, 0, 255, cv::NORM_MINMAX, CV_32FC1, cv::Mat());
 
     // 3. Draw
     cv::Mat result = ctx->src.clone();
-    for(int j = 0; j < dst_norm.rows; j++) {
-        for(int i = 0; i < dst_norm.cols; i++) {
-            if((int)dst_norm.at<float>(j,i) > ctx->threshold) {
-                cv::circle(result, cv::Point(i,j), 5, cv::Scalar(0,0,255), 2);
-            }
-        }
-    }
+    std::vector<cv::KeyPoint> keypoints = getHarrisKeypoints(dst_norm, static_cast<float>(ctx->threshold));
+    cv::drawKeypoints(ctx->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    
     cv::imshow("Harris Corners", result);
 
     // 4. Show heatmap

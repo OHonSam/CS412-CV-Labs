@@ -81,29 +81,29 @@ void onBlobTrackbar(int, void* userData) {
     BlobContext* blobContext = static_cast<BlobContext*>(userData);
     if (blobContext->src.empty()) return;
 
-    // cv::SimpleBlobDetector::Params blobParams;
+    cv::SimpleBlobDetector::Params blobParams;
 
-    // blobParams.filterByArea = blobContext->filterByArea;
-    // blobParams.filterByCircularity = blobContext->filterByCircularity;
-    // blobParams.filterByConvexity = blobContext->filterByConvexity;
-    // blobParams.filterByInertia = blobContext->filterByInertia;
-    // blobParams.minThreshold = blobContext->minThreshold;
-    // blobParams.maxThreshold = blobContext->maxThreshold;
-    // blobParams.thresholdStep = blobContext->thresholdStep;
+    blobParams.filterByArea = blobContext->filterByArea;
+    blobParams.filterByCircularity = blobContext->filterByCircularity;
+    blobParams.filterByConvexity = blobContext->filterByConvexity;
+    blobParams.filterByInertia = blobContext->filterByInertia;
+    blobParams.minThreshold = blobContext->minThreshold;
+    blobParams.maxThreshold = blobContext->maxThreshold;
+    blobParams.thresholdStep = blobContext->thresholdStep;
 
-    // cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(blobParams);
-    // std::vector<cv::KeyPoint> keypoints;
-    // detector->detect(blobContext->gray, keypoints);
+    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(blobParams);
+    std::vector<cv::KeyPoint> keypoints;
+    detector->detect(blobContext->gray, keypoints);
 
-    // cv::Mat result = blobContext->src.clone();
-    // cv::drawKeypoints(blobContext->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-
-    // Own implementation start
-    std::vector<cv::KeyPoint> keypoints = myBlobDetection(blobContext->gray, *blobContext);
-
-    cv::Mat result;
+    cv::Mat result = blobContext->src.clone();
     cv::drawKeypoints(blobContext->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-    // Own implementation end
+
+    // // Own implementation start
+    // std::vector<cv::KeyPoint> keypoints = myBlobDetection(blobContext->gray, *blobContext);
+
+    // cv::Mat result;
+    // cv::drawKeypoints(blobContext->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    // // Own implementation end
 
     cv::imshow("Blob Detection", result);
 }

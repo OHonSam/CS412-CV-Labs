@@ -1,5 +1,21 @@
 #include "DoGDetector.hpp"
+#include "Utils.hpp"
 #include <iostream>
+
+std::vector<cv::KeyPoint> getDoGKeypoints(const cv::Mat& dogResponse, float threshold) {
+    std::vector<cv::KeyPoint> keypoints;
+    for (int y = 0; y < dogResponse.rows; y++) {
+        for (int x = 0; x < dogResponse.cols; x++) {
+            float response = dogResponse.at<uchar>(y, x);
+            if (response > threshold) {
+                keypoints.push_back(cv::KeyPoint(cv::Point2f(x, y), 5.f, -1, response));
+            }
+        }
+    }
+
+    // Apply Non-Maximum Suppression to refine keypoints
+    return keypointNMS(keypoints, 10.0); // 10 pixels minimum distance
+}
 
 void onDoGTrackbar(int, void* userData) {
     DoGContext* dogContext = static_cast<DoGContext*>(userData);
@@ -32,7 +48,13 @@ void onDoGTrackbar(int, void* userData) {
     cv::Mat dogNorm;
     cv::normalize(dog, dogNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 
-    cv::imshow("DoG Detection", dogNorm);
+    cv::Mat result = dogContext->src.clone();
+    std::vector<cv::KeyPoint> kps = getDoGKeypoints(dogNorm, dogContext->threshold);
+    cv::drawKeypoints(dogContext->src, kps, result, cv::Scalar(0,0,255), 
+                      cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+
+    cv::imshow("DoG Detection", result);
+    cv::imshow("DoG Response", dogNorm);
 }
 
 void detectDoG(const std::string& imagePath) {
