@@ -35,6 +35,14 @@ struct BlobContext {
     bool filterByInertia = false;
 };
 
+struct DoGContext {
+    cv::Mat src;
+    cv::Mat gray;
+    int sigma1 = 1;  // Standard deviation for the first Gaussian
+    int sigmaDiff = 1;  // Difference in standard deviation for the second Gaussian
+    int kernelSize = 5;  // Size of the Gaussian kernel
+};
+
 // UI and Helper functions
 void displayHelp();
 void openCamera();
@@ -50,9 +58,13 @@ cv::Mat applySeparableConvolution(const cv::Mat& src, const std::vector<float>& 
 void detectHarris(const std::string& imagePath);
 void detectHarrisCamera();
 void onHarrisTrackbar(int, void* userData);
+void myCornerHarris(const cv::Mat& src, cv::Mat& dst, int blockSize, int apertureSize, double k);
 void detectBlob(const std::string& imagePath);
 void detectBlobCamera();
+void onBlobTrackbar(int, void* userData);
+std::vector<cv::KeyPoint> myBlobDetection(const cv::Mat& gray, const BlobContext& context);
 void detectDoG(const std::string& imagePath);
+void onDoGTrackbar(int, void* userData);
 void detectDoGCamera();
 
 // Matching functions

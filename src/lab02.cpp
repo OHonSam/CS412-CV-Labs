@@ -45,8 +45,9 @@ int main(int argc, char** argv) {
         matchFeatures(argv[2], argv[3], argv[4], argv[5]);
     }
     else {
-        cout << "No img found. Invoke camera" << endl;
-        openCamera();
+        cerr << "Error: Unknown command '" << command << "'" << endl;
+        displayHelp();
+        return -1;
     }
 
     return 0;

@@ -308,12 +308,11 @@ void onBlobTrackbar(int, void* userData) {
     // cv::drawKeypoints(blobContext->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 
     // Own implementation start
-
-    // Own implementation end
     std::vector<cv::KeyPoint> keypoints = myBlobDetection(blobContext->gray, *blobContext);
 
     cv::Mat result;
     cv::drawKeypoints(blobContext->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    // Own implementation end
 
     cv::imshow("Blob Detection", result);
 }
@@ -375,12 +374,57 @@ void detectBlobCamera() {
     cv::destroyAllWindows();
 }
 
-void detectDoG(const std::string& imagePath) {
-    cv::Mat img = cv::imread(imagePath, cv::IMREAD_COLOR);
-    if (img.empty()) { std::cerr << "Could not read image: " << imagePath << std::endl; return; }
+void onDoGTrackbar(int, void* userData) {
+    DoGContext* dogContext = static_cast<DoGContext*>(userData);
+    if (dogContext->src.empty()) return;
 
-    // TODO: Implement DoG logic here
-    cv::imshow("DoG", img);
+    // Ensure kernel size is odd and at least 3
+    int ksize = dogContext->kernelSize;
+    ksize = (ksize / 2) * 2 + 1;
+    if (ksize < 3) ksize = 3;
+
+    // Ensure sigma difference is at least 1
+    int sigmaDiff = dogContext->sigmaDiff;
+    if (sigmaDiff < 1) sigmaDiff = 1;
+
+    // // Create Gaussian kernels
+    // cv::Mat gauss1 = createGaussianFilter(ksize);
+    // cv::Mat gauss2 = createGaussianFilter(ksize);
+
+    // // Apply Gaussian blurs
+    // cv::Mat blur1 = applyConvolution(dogContext->gray, gauss1);
+    // cv::Mat blur2 = applyConvolution(dogContext->gray, gauss2);
+
+    cv::Mat blur1, blur2;
+    cv::GaussianBlur(dogContext->gray, blur1, cv::Size(ksize, ksize), dogContext->sigma1);
+    cv::GaussianBlur(dogContext->gray, blur2, cv::Size(ksize, ksize), dogContext->sigma1 + sigmaDiff);
+
+    // Compute DoG
+    cv::Mat dog;
+    cv::subtract(blur1, blur2, dog);
+    cv::Mat dogNorm;
+    cv::normalize(dog, dogNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+
+    cv::imshow("DoG Detection", dogNorm);
+}
+
+void detectDoG(const std::string& imagePath) {
+    DoGContext* dogContext = new DoGContext;
+
+    std::string windowName = "DoG Detection";
+    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+
+    dogContext->src = cv::imread(imagePath, cv::IMREAD_COLOR);
+    if (dogContext->src.empty()) { std::cerr << "Could not read image: " << imagePath << std::endl; return; }
+
+    cv::cvtColor(dogContext->src, dogContext->gray, cv::COLOR_BGR2GRAY);
+
+    cv::createTrackbar("Sigma (first kernel)", windowName, &dogContext->sigma1, 100, onDoGTrackbar, dogContext);
+    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &dogContext->sigmaDiff, 100, onDoGTrackbar, dogContext);
+    cv::createTrackbar("Kernel Size", windowName, &dogContext->kernelSize, 21, onDoGTrackbar, dogContext);
+
+    onDoGTrackbar(0, dogContext);
+
     cv::waitKey(0);
     cv::destroyAllWindows();
 }
@@ -392,19 +436,27 @@ void detectDoGCamera() {
         return;
     }
 
+    std::string windowName = "DoG Detection";
+    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+
+    DoGContext* dogContext = new DoGContext();
+    cv::createTrackbar("Sigma (first kernel)", windowName, &dogContext->sigma1, 100, onDoGTrackbar, dogContext);
+    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &dogContext->sigmaDiff, 100, onDoGTrackbar, dogContext);
+    cv::createTrackbar("Kernel Size", windowName, &dogContext->kernelSize, 21, onDoGTrackbar, dogContext);
+
     cv::Mat frame;
     while (true) {
         cap >> frame;
         if (frame.empty()) break;
 
-        std::string imagePath = "camera_frame.jpg";
-        cv::imwrite(imagePath, frame);
+        // 2. Update Context with the new frame
+        dogContext->src = frame;
+        cv::cvtColor(dogContext->src, dogContext->gray, cv::COLOR_BGR2GRAY);
 
-        // Call the DoG detection function
-        detectDoG(imagePath);
+        // 3. Process and Display
+        onDoGTrackbar(0, dogContext);
 
-        cv::imshow("DoG", frame);
-        if (cv::waitKey(30) >= 0) break;
+        if (cv::waitKey(30) >= 27) break;
     }
 
     cap.release();
