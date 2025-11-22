@@ -28,6 +28,7 @@ struct BlobContext {
     bool filterByArea = true;
     int minArea = 100;         // Trackbar variable
     int maxArea = 10000;
+    float minDistBetweenBlobs = 10.0f;
     
     bool filterByCircularity = false;
     bool filterByConvexity = false;

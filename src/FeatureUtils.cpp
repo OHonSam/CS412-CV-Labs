@@ -210,32 +210,76 @@ void detectHarrisCamera() {
     delete ctx;
 }
 
-std::vector<cv::KeyPoint> myBlobDetect(const cv::Mat& gray, const BlobContext& context) {
-    std::vector<cv::KeyPoint> keypoints;
+std::vector<cv::KeyPoint> myBlobDetection(const cv::Mat& gray, const BlobContext& context) {
+    // Step 1 & 2: Threshold at multiple levels and collect centers
+    std::vector<cv::Point2f> allCenters; // Store all centers from all thresholds
+    
     for (float thresh = context.minThreshold;
             thresh < context.maxThreshold;
             thresh += context.thresholdStep) {
 
-        // Apply binary threshold
         cv::Mat binaryImage;
         cv::threshold(gray, binaryImage, thresh, 255, cv::THRESH_BINARY);
 
-        // Find contours
         std::vector<std::vector<cv::Point>> contours;
         cv::findContours(binaryImage, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
         
-        // Process each contour
         for (const auto& contour : contours) {
             double area = cv::contourArea(contour);
             if (area >= context.minArea && area <= context.maxArea) {
-                // Compute centroid
                 cv::Moments M = cv::moments(contour);
                 if (M.m00 != 0) {
                     float cx = static_cast<float>(M.m10 / M.m00);
                     float cy = static_cast<float>(M.m01 / M.m00);
-                    keypoints.emplace_back(cv::Point2f(cx, cy), static_cast<float>(std::sqrt(area))); // Size proportional to sqrt of area
+                    allCenters.push_back(cv::Point2f(cx, cy));
                 }
             }
+        }
+    }
+
+    // Step 3: Group close centers using minDistBetweenBlobs
+    std::vector<cv::KeyPoint> keypoints;
+    std::vector<bool> used(allCenters.size(), false);
+    
+    float minDist = context.minDistBetweenBlobs;
+    
+    for (size_t i = 0; i < allCenters.size(); i++) {
+        if (used[i]) continue;
+        
+        // Start a new group
+        std::vector<cv::Point2f> group;
+        group.push_back(allCenters[i]);
+        used[i] = true;
+        
+        // Find all centers within minDist
+        for (size_t j = i + 1; j < allCenters.size(); j++) {
+            if (used[j]) continue;
+            
+            float dist = cv::norm(allCenters[i] - allCenters[j]);
+            if (dist < minDist) {
+                group.push_back(allCenters[j]);
+                used[j] = true;
+            }
+        }
+        
+        // Step 4: Compute final center and radius from the group
+        cv::Point2f finalCenter(0, 0);
+        for (const auto& pt : group) {
+            finalCenter += pt;
+        }
+        finalCenter.x /= group.size();
+        finalCenter.y /= group.size();
+        
+        // Estimate radius as average distance from center
+        float avgRadius = 0;
+        for (const auto& pt : group) {
+            avgRadius += cv::norm(pt - finalCenter);
+        }
+        avgRadius /= group.size();
+        
+        // Only add if radius is reasonable (otherwise it's noise)
+        if (avgRadius > 1.0f) {
+            keypoints.emplace_back(finalCenter, avgRadius * 2.0f); // Diameter
         }
     }
 
@@ -266,7 +310,7 @@ void onBlobTrackbar(int, void* userData) {
     // Own implementation start
 
     // Own implementation end
-    std::vector<cv::KeyPoint> keypoints = myBlobDetect(blobContext->gray, *blobContext);
+    std::vector<cv::KeyPoint> keypoints = myBlobDetection(blobContext->gray, *blobContext);
 
     cv::Mat result;
     cv::drawKeypoints(blobContext->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
