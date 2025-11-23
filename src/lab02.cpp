@@ -44,9 +44,18 @@ int main(int argc, char** argv) {
             detectDoGCamera();
         }
     }
-    else if (command == "m" && argc >= 6) {
+    else if (command == "m") {
         // Usage: ./main m <detector> <descriptor> <img1> <img2>
-        matchFeatures(argv[2], argv[3], argv[4], argv[5]);
+        if (argc >= 6) {
+            matchFeatures(argv[2], argv[3], argv[4], argv[5]);
+        } else if (argc == 4) {
+            cout << "No images found. Invoke camera" << endl;
+            matchFeaturesCamera(argv[2], argv[3]);
+        } else {
+            cerr << "Error: Insufficient arguments for feature matching" << endl;
+            displayHelp();
+            return -1;
+        }
     }
     else {
         cerr << "Error: Unknown command '" << command << "'" << endl;

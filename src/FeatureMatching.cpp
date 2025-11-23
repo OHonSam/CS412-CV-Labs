@@ -241,4 +241,89 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
 
     cv::waitKey(0);
     cv::destroyAllWindows();
+    delete context;
+}
+
+void matchFeaturesCamera(const std::string& detectorType, const std::string& descriptorType) {
+    MatchContext* context = new MatchContext();
+    const std::string windowName = "Feature Matches";
+
+    std::cout << "Matching from camera" << std::endl;
+    std::cout << "Detector: " << detectorType << ", Descriptor: " << descriptorType << std::endl;
+    if (detectorType != "harris" && detectorType != "dog" && detectorType != "blob") {
+        std::cerr << "Error: Unknown detector type '" << detectorType << "'" << std::endl;
+        return;
+    }
+
+    if (descriptorType != "sift" && descriptorType != "lbp") {
+        std::cerr << "Error: Unknown descriptor type '" << descriptorType << "'" << std::endl;
+        return;
+    }
+
+    cv::VideoCapture cap(0);
+    if (!cap.isOpened()) {
+        std::cerr << "Error: Could not open camera." << std::endl;
+        return;
+    }
+
+    context->detectorType = detectorType;
+    context->descriptorType = descriptorType;
+
+    // Create window and trackbar
+    cv::namedWindow(windowName, cv::WINDOW_NORMAL);
+
+    if (context->detectorType == "harris") {
+        cv::createTrackbar("Block Size", windowName, &context->harrisContext.blockSize, context->harrisContext.max_harris_blockSize, onMatchTrackbar, context);
+        cv::createTrackbar("Aperture (Odd)", windowName, &context->harrisContext.apertureSize, context->harrisContext.max_harris_ksize, onMatchTrackbar, context);
+        cv::createTrackbar("K (x100)", windowName, &context->harrisContext.k_x100, context->harrisContext.max_harris_k_x100, onMatchTrackbar, context);
+        cv::createTrackbar("Threshold", windowName, &context->harrisContext.threshold, context->harrisContext.max_harris_threshold, onMatchTrackbar, context);
+
+    } else if (context->detectorType == "dog") {
+        cv::createTrackbar("Sigma (first kernel)", windowName, &context->dogContext.sigma1, 100, onMatchTrackbar, context);
+        cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &context->dogContext.sigmaDiff, 100, onMatchTrackbar, context);
+        cv::createTrackbar("Kernel Size", windowName, &context->dogContext.kernelSize, 21, onMatchTrackbar, context);
+    } else if (context->detectorType == "blob") {
+        cv::createTrackbar("Min Threshold", windowName, &context->blobContext.minThreshold, 255, onMatchTrackbar, context);
+        cv::createTrackbar("Max Threshold", windowName, &context->blobContext.maxThreshold, 255, onMatchTrackbar, context);
+        cv::createTrackbar("Threshold Step", windowName, &context->blobContext.thresholdStep, 10, onMatchTrackbar, context);
+    }      
+
+    cv::createTrackbar("Ratio Thresh (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
+    
+    cv::Mat frame;
+    std::cout << "Press SPACE to capture first image..." << std::endl;
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) continue;
+        cv::imshow("Capture Image 1 (Press SPACE to capture)", frame);
+        int key = cv::waitKey(30);
+        if (key == 32) { // SPACE key
+            context->img1 = frame.clone();
+            break;
+        }
+    }
+    cv::destroyWindow("Capture Image 1 (Press SPACE to capture)");
+
+    cv::cvtColor(context->img1, context->gray1, cv::COLOR_BGR2GRAY);
+
+    std::cout << "Press SPACE to capture second image..." << std::endl;
+    while (true) {
+        cap >> frame;
+        if (frame.empty()) continue;
+        cv::imshow("Capture Image 2 (Press SPACE to capture)", frame);
+        int key = cv::waitKey(30);
+        if (key == 32) { // SPACE key
+            context->img2 = frame.clone();
+            break;
+        }
+    }
+    cv::destroyWindow("Capture Image 2 (Press SPACE to capture)");
+
+    cv::cvtColor(context->img2, context->gray2, cv::COLOR_BGR2GRAY);
+
+    onMatchTrackbar(0, context);
+
+    cv::waitKey(0);
+    cv::destroyAllWindows();
+    delete context;
 }

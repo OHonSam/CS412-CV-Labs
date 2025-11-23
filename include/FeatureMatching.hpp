@@ -31,8 +31,10 @@ struct MatchContext {
 };
 
 // Matching functions
+void onMatchTrackbar(int, void* userData);
 void matchFeatures(const std::string& detectorType, const std::string& descriptorType, 
                   const std::string& img1Path, const std::string& img2Path);
+void matchFeaturesCamera(const std::string& detectorType, const std::string& descriptorType);
 void computeSIFTDescriptors(const cv::Mat& gray, 
         const std::vector<cv::KeyPoint>& keypoints, 
         cv::Mat& descriptors);
