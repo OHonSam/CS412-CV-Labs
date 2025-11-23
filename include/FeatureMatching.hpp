@@ -29,6 +29,7 @@ struct MatchContext {
 };
 
 // Matching functions
+cv::BFMatcher createMatcher(const std::string& descriptorType);
 void onMatchTrackbar(int, void* userData);
 void matchFeatures(const std::string& detectorType, const std::string& descriptorType, 
                   const std::string& img1Path, const std::string& img2Path);

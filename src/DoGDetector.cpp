@@ -13,6 +13,12 @@ std::vector<cv::KeyPoint> getDoGKeypoints(const cv::Mat& dogResponse, float thre
         }
     }
 
+    // Limit to 5000 strongest keypoints (for example)
+    std::sort(keypoints.begin(), keypoints.end(),
+              [](const cv::KeyPoint& a, const cv::KeyPoint& b) { return a.response > b.response; });
+    if (keypoints.size() > 5000)
+        keypoints.resize(5000);
+
     // Apply Non-Maximum Suppression to refine keypoints
     return keypointNMS(keypoints, 10.0); // 10 pixels minimum distance
 }
@@ -44,7 +50,7 @@ void onDoGTrackbar(int, void* userData) {
 
     cv::Mat result = dogContext->src.clone();
     std::vector<cv::KeyPoint> kps = getDoGKeypoints(dogNorm, dogContext->threshold);
-    cv::drawKeypoints(dogContext->src, kps, result, cv::Scalar(0,0,255), 
+    cv::drawKeypoints(dogContext->src, kps, result, cv::Scalar(0,255,255), 
                       cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 
     cv::imshow("DoG Detection", result);

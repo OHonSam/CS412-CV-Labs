@@ -54,6 +54,12 @@ std::vector<cv::KeyPoint> getHarrisKeypoints(const cv::Mat& harrisResponse, floa
             }
         }
     }
+
+    // Limit to 5000 strongest keypoints (for example)
+    std::sort(keypoints.begin(), keypoints.end(),
+              [](const cv::KeyPoint& a, const cv::KeyPoint& b) { return a.response > b.response; });
+    if (keypoints.size() > 5000)
+        keypoints.resize(5000);
     
     return keypointNMS(keypoints, 10.0); // Apply NMS with a minimum distance of 10 pixels
 }
@@ -78,7 +84,7 @@ void onHarrisTrackbar(int, void* userData) {
     // 3. Draw
     cv::Mat result = ctx->src.clone();
     std::vector<cv::KeyPoint> keypoints = getHarrisKeypoints(dst_norm, static_cast<float>(ctx->threshold));
-    cv::drawKeypoints(ctx->src, keypoints, result, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::drawKeypoints(ctx->src, keypoints, result, cv::Scalar(0, 255, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     
     cv::imshow("Harris Corners", result);
 

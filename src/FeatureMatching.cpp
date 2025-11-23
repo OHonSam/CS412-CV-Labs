@@ -6,6 +6,16 @@
 #include "LBPDescriptor.hpp"
 #include <iostream>
 
+cv::BFMatcher createMatcher(const std::string& descriptorType) {
+    if (descriptorType == "sift") {
+        return cv::BFMatcher(cv::NORM_L2);
+    } else if (descriptorType == "lbp") {
+        // Use NORM_L2 for histogram-based LBP, or NORM_HAMMING for binary LBP
+        return cv::BFMatcher(cv::NORM_L2);
+    }
+    return cv::BFMatcher(cv::NORM_L2);
+}
+
 void onMatchTrackbar(int, void* userData) {
     MatchContext* context = static_cast<MatchContext*>(userData);
     if (!context) return;   
@@ -90,47 +100,47 @@ void onMatchTrackbar(int, void* userData) {
               << keypoints2.size() << " (img2)" << std::endl;
 
     // Match descriptors using KNN matcher
-    cv::BFMatcher matcher(cv::NORM_L2); // Remove cross-check for KNN
+    cv::BFMatcher matcher = createMatcher(context->descriptorType);
     std::vector<std::vector<cv::DMatch>> knn_matches;
     matcher.knnMatch(descriptors1, descriptors2, knn_matches, 2); // Find 2 nearest neighbors
 
-    // Visualize all matches from KNN
-    std::vector<cv::DMatch> all_matches;
-    for (const auto& knn_match : knn_matches) {
-        if (!knn_match.empty()) {
-            all_matches.push_back(knn_match[0]);
-        }
-    }
-
-    // // Visualize good matches
-    // // Apply Lowe's ratio test to filter good matches
-    // const float ratio_thresh = context->ratioThreshold / 100.0f;
-    // std::vector<cv::DMatch> good_matches;
-    // for (size_t i = 0; i < knn_matches.size(); i++) {
-    //     // Only consider if we found 2 neighbors
-    //     if (knn_matches[i].size() == 2) {
-    //         // If the best match is significantly better than the second-best
-    //         if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance) {
-    //             good_matches.push_back(knn_matches[i][0]);
-    //         }
+    // // Visualize all matches from KNN
+    // std::vector<cv::DMatch> all_matches;
+    // for (const auto& knn_match : knn_matches) {
+    //     if (!knn_match.empty()) {
+    //         all_matches.push_back(knn_match[0]);
     //     }
     // }
 
-    // std::cout << "Good matches after Lowe's ratio test: " << good_matches.size() << std::endl;
+    // Visualize good matches
+    // Apply Lowe's ratio test to filter good matches
+    const float ratio_thresh = context->ratioThreshold / 100.0f;
+    std::vector<cv::DMatch> good_matches;
+    for (size_t i = 0; i < knn_matches.size(); i++) {
+        // Only consider if we found 2 neighbors
+        if (knn_matches[i].size() == 2) {
+            // If the best match is significantly better than the second-best
+            if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance) {
+                good_matches.push_back(knn_matches[i][0]);
+            }
+        }
+    }
 
-    // if (good_matches.empty()) {
-    //     std::cerr << "No good matches found." << std::endl;
-    //     return;
-    // }
+    std::cout << "Good matches after Lowe's ratio test: " << good_matches.size() << std::endl;
+
+    if (good_matches.empty()) {
+        std::cerr << "No good matches found." << std::endl;
+        return;
+    }
 
     cv::Mat imgMatches;
-    cv::drawMatches(context->img1, keypoints1, context->img2, keypoints2, all_matches, imgMatches,
+    cv::drawMatches(context->img1, keypoints1, context->img2, keypoints2, good_matches, imgMatches,
                     cv::Scalar::all(-1), cv::Scalar::all(-1),
                     std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 
     // Resize the visualization to fit the screen
-    cv::Mat imgMatchesResized;
     double scale = 0.5;
+    cv::Mat imgMatchesResized;
     cv::resize(imgMatches, imgMatchesResized, cv::Size(), scale, scale);
 
     cv::imshow("Feature Matches", imgMatchesResized);
@@ -160,6 +170,9 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
         std::cerr << "Error: Could not read one of the images." << std::endl;
         return;
     }
+
+    // Convert two images to the same size
+    cv::resize(context->img1, context->img1, context->img2.size());
 
     cv::cvtColor(context->img1, context->gray1, cv::COLOR_BGR2GRAY);
     cv::cvtColor(context->img2, context->gray2, cv::COLOR_BGR2GRAY);
