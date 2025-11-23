@@ -89,7 +89,7 @@ void onBlobTrackbar(int, void* userData) {
     blobParams.filterByInertia = blobContext->filterByInertia;
     blobParams.minThreshold = blobContext->minThreshold;
     blobParams.maxThreshold = blobContext->maxThreshold;
-    blobParams.thresholdStep = blobContext->thresholdStep;
+    blobParams.thresholdStep = blobContext->getSafeThresholdStep();
 
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(blobParams);
     std::vector<cv::KeyPoint> keypoints;

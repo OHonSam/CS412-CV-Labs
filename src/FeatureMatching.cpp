@@ -58,27 +58,37 @@ void onMatchTrackbar(int, void* userData) {
         keypoints2 = getDoGKeypoints(dst2_norm, context->dogContext.threshold);
 
     } else if (context->detectorType == "blob") {
-        cv::SimpleBlobDetector::Params params1, params2;
-        params1.minThreshold = context->blobContext.minThreshold;
-        params1.maxThreshold = context->blobContext.maxThreshold;
-        params1.thresholdStep = context->blobContext.thresholdStep;
-        params1.filterByArea = context->blobContext.filterByArea;
-        params1.minArea = context->blobContext.minArea;
-        params1.maxArea = context->blobContext.maxArea;
-        params1.minDistBetweenBlobs = context->blobContext.minDistBetweenBlobs;
+        cv::SimpleBlobDetector::Params blobParams;
+        blobParams.minThreshold = context->blobContext.minThreshold;
+        blobParams.maxThreshold = context->blobContext.maxThreshold;
+        blobParams.thresholdStep = context->blobContext.getSafeThresholdStep();
+        blobParams.filterByArea = context->blobContext.filterByArea;
+        blobParams.minArea = context->blobContext.minArea;
+        blobParams.maxArea = context->blobContext.maxArea;
+        blobParams.minDistBetweenBlobs = context->blobContext.minDistBetweenBlobs;
+        blobParams.filterByCircularity = context->blobContext.filterByCircularity;
+        blobParams.minCircularity = context->blobContext.getMinCircularity();
+        blobParams.filterByConvexity = context->blobContext.filterByConvexity;
+        blobParams.minConvexity = context->blobContext.getMinConvexity();
+        blobParams.filterByInertia = context->blobContext.filterByInertia;
+        blobParams.minInertiaRatio = context->blobContext.getMinInertia();
 
-        params2.minThreshold = context->blobContext.minThreshold;
-        params2.maxThreshold = context->blobContext.maxThreshold;
-        params2.thresholdStep = context->blobContext.thresholdStep;
-        params2.filterByArea = context->blobContext.filterByArea;
-        params2.minArea = context->blobContext.minArea;
-        params2.maxArea = context->blobContext.maxArea;
-        params2.minDistBetweenBlobs = context->blobContext.minDistBetweenBlobs;
-
-        cv::Ptr<cv::SimpleBlobDetector> detector1 = cv::SimpleBlobDetector::create(params1);
-        cv::Ptr<cv::SimpleBlobDetector> detector2 = cv::SimpleBlobDetector::create(params2);
+        cv::Ptr<cv::SimpleBlobDetector> detector1 = cv::SimpleBlobDetector::create(blobParams);
+        cv::Ptr<cv::SimpleBlobDetector> detector2 = cv::SimpleBlobDetector::create(blobParams);
         detector1->detect(context->gray1, keypoints1);
         detector2->detect(context->gray2, keypoints2);
+    }
+
+    if (keypoints1.empty() || keypoints2.empty()) {
+        std::cerr << "\nERROR: Insufficient keypoints detected!" << std::endl;
+        std::cerr << "  → Image 1: " << keypoints1.size() << " keypoints" << std::endl;
+        std::cerr << "  → Image 2: " << keypoints2.size() << " keypoints" << std::endl;
+        std::cerr << "\nPossible solutions:" << std::endl;
+        std::cerr << "  1. Adjust detector parameters (lower threshold, change filters)" << std::endl;
+        std::cerr << "  2. Check if images have detectable features" << std::endl;
+        std::cerr << "  3. Try a different detector (harris/dog/blob)" << std::endl;
+        std::cerr << "====================================\n" << std::endl;
+        return;
     }
 
     // Compute descriptors
@@ -104,6 +114,8 @@ void onMatchTrackbar(int, void* userData) {
     std::vector<std::vector<cv::DMatch>> knn_matches;
     matcher.knnMatch(descriptors1, descriptors2, knn_matches, 2); // Find 2 nearest neighbors
 
+    cv::Mat imgMatches;
+
     // // Visualize all matches from KNN
     // std::vector<cv::DMatch> all_matches;
     // for (const auto& knn_match : knn_matches) {
@@ -111,6 +123,10 @@ void onMatchTrackbar(int, void* userData) {
     //         all_matches.push_back(knn_match[0]);
     //     }
     // }
+
+    // cv::drawMatches(context->img1, keypoints1, context->img2, keypoints2, all_matches, imgMatches,
+    //             cv::Scalar::all(-1), cv::Scalar::all(-1),
+    //             std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 
     // Visualize good matches
     // Apply Lowe's ratio test to filter good matches
@@ -133,7 +149,6 @@ void onMatchTrackbar(int, void* userData) {
         return;
     }
 
-    cv::Mat imgMatches;
     cv::drawMatches(context->img1, keypoints1, context->img2, keypoints2, good_matches, imgMatches,
                     cv::Scalar::all(-1), cv::Scalar::all(-1),
                     std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
@@ -172,7 +187,7 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
     }
 
     // Convert two images to the same size
-    cv::resize(context->img1, context->img1, context->img2.size());
+    // cv::resize(context->img1, context->img1, context->img2.size());
 
     cv::cvtColor(context->img1, context->gray1, cv::COLOR_BGR2GRAY);
     cv::cvtColor(context->img2, context->gray2, cv::COLOR_BGR2GRAY);
@@ -193,11 +208,15 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
         cv::createTrackbar("Sigma (first kernel)", windowName, &context->dogContext.sigma1, 100, onMatchTrackbar, context);
         cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &context->dogContext.sigmaDiff, 100, onMatchTrackbar, context);
         cv::createTrackbar("Kernel Size", windowName, &context->dogContext.kernelSize, 21, onMatchTrackbar, context);
+        cv::createTrackbar("Threshold", windowName, &context->dogContext.threshold, 255, onMatchTrackbar, context);
 
     } else if (context->detectorType == "blob") {
         cv::createTrackbar("Min Threshold", windowName, &context->blobContext.minThreshold, 255, onMatchTrackbar, context);
         cv::createTrackbar("Max Threshold", windowName, &context->blobContext.maxThreshold, 255, onMatchTrackbar, context);
         cv::createTrackbar("Threshold Step", windowName, &context->blobContext.thresholdStep, 10, onMatchTrackbar, context);
+        cv::createTrackbar("Min Circularity", windowName, &context->blobContext.minCircularity, 100, onMatchTrackbar, context);
+        cv::createTrackbar("Min Convexity", windowName, &context->blobContext.minConvexity, 100, onMatchTrackbar, context);
+        cv::createTrackbar("Min Inertia", windowName, &context->blobContext.minInertia, 100, onMatchTrackbar, context);
     }
 
     cv::createTrackbar("Ratio Thresh (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
@@ -248,6 +267,8 @@ void matchFeaturesCamera(const std::string& detectorType, const std::string& des
         cv::createTrackbar("Sigma (first kernel)", windowName, &context->dogContext.sigma1, 100, onMatchTrackbar, context);
         cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &context->dogContext.sigmaDiff, 100, onMatchTrackbar, context);
         cv::createTrackbar("Kernel Size", windowName, &context->dogContext.kernelSize, 21, onMatchTrackbar, context);
+        cv::createTrackbar("Threshold", windowName, &context->dogContext.threshold, 255, onMatchTrackbar, context);
+
     } else if (context->detectorType == "blob") {
         cv::createTrackbar("Min Threshold", windowName, &context->blobContext.minThreshold, 255, onMatchTrackbar, context);
         cv::createTrackbar("Max Threshold", windowName, &context->blobContext.maxThreshold, 255, onMatchTrackbar, context);

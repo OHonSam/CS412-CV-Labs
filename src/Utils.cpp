@@ -68,7 +68,7 @@ void displayHelp() {
     std::cout << "  (i) m blob lbp <image1.jpg> <image2.jpg>" << std::endl;
     std::cout << "      - Match images using Blob + LBP\n" << std::endl;
 
-    std::cout << "  (j) help" << std::endl;
+    std::cout << "  (j) h" << std::endl;
     std::cout << "      - Display this help message\n" << std::endl;
 
     std::cout << "KEYBOARD CONTROLS:" << std::endl;
