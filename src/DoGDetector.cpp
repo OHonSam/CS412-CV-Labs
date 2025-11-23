@@ -2,6 +2,33 @@
 #include "Utils.hpp"
 #include <iostream>
 
+std::vector<cv::KeyPoint> DoGDetector::detect(const cv::Mat& gray) {
+    context.gray = gray.clone();
+
+    int ksize = context.params.getValidKernelSize();
+    int sigmaDiff = context.params.getValidSigmaDiff();
+
+    cv::Mat blur1, blur2;
+    cv::GaussianBlur(context.gray, blur1, cv::Size(ksize, ksize), context.params.sigma1);
+    cv::GaussianBlur(context.gray, blur2, cv::Size(ksize, ksize), context.params.sigma1 + sigmaDiff);
+
+    // Compute DoG
+    cv::Mat dog;
+    cv::subtract(blur1, blur2, dog);
+    cv::Mat dogNorm;
+    cv::normalize(dog, dogNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+
+    return getDoGKeypoints(dogNorm, context.params.threshold);
+}
+
+void DoGDetector::createTrackbars(const std::string& win, void* userdata) {
+    DoGContext* ctx = static_cast<DoGContext*>(userdata);
+
+    cv::createTrackbar("Sigma (first kernel)", win, &ctx->params.sigma1, DoGParams::MAX_SIGMA, onDoGTrackbar, ctx);
+    cv::createTrackbar("Sigma Diff (first to second kernel)", win, &ctx->params.sigmaDiff, DoGParams::MAX_SIGMA_DIFF, onDoGTrackbar, ctx);
+    cv::createTrackbar("Kernel Size", win, &ctx->params.kernelSize, DoGParams::MAX_KERNEL_SIZE, onDoGTrackbar, ctx);
+}
+
 std::vector<cv::KeyPoint> getDoGKeypoints(const cv::Mat& dogResponse, float threshold) {
     std::vector<cv::KeyPoint> keypoints;
     for (int y = 0; y < dogResponse.rows; y++) {
@@ -21,14 +48,8 @@ void onDoGTrackbar(int, void* userData) {
     DoGContext* dogContext = static_cast<DoGContext*>(userData);
     if (dogContext->src.empty()) return;
 
-    // Ensure kernel size is odd and at least 3
-    int ksize = dogContext->kernelSize;
-    ksize = (ksize / 2) * 2 + 1;
-    if (ksize < 3) ksize = 3;
-
-    // Ensure sigma difference is at least 1
-    int sigmaDiff = dogContext->sigmaDiff;
-    if (sigmaDiff < 1) sigmaDiff = 1;
+    int ksize = dogContext->params.getValidKernelSize();
+    int sigmaDiff = dogContext->params.getValidSigmaDiff();
 
     // // Create Gaussian kernels
     // cv::Mat gauss1 = createGaussianFilter(ksize);
@@ -39,8 +60,8 @@ void onDoGTrackbar(int, void* userData) {
     // cv::Mat blur2 = applyConvolution(dogContext->gray, gauss2);
 
     cv::Mat blur1, blur2;
-    cv::GaussianBlur(dogContext->gray, blur1, cv::Size(ksize, ksize), dogContext->sigma1);
-    cv::GaussianBlur(dogContext->gray, blur2, cv::Size(ksize, ksize), dogContext->sigma1 + sigmaDiff);
+    cv::GaussianBlur(dogContext->gray, blur1, cv::Size(ksize, ksize), dogContext->params.sigma1);
+    cv::GaussianBlur(dogContext->gray, blur2, cv::Size(ksize, ksize), dogContext->params.sigma1 + sigmaDiff);
 
     // Compute DoG
     cv::Mat dog;
@@ -49,7 +70,7 @@ void onDoGTrackbar(int, void* userData) {
     cv::normalize(dog, dogNorm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
 
     cv::Mat result = dogContext->src.clone();
-    std::vector<cv::KeyPoint> kps = getDoGKeypoints(dogNorm, dogContext->threshold);
+    std::vector<cv::KeyPoint> kps = getDoGKeypoints(dogNorm, dogContext->params.threshold);
     cv::drawKeypoints(dogContext->src, kps, result, cv::Scalar(0,0,255), 
                       cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 
@@ -68,9 +89,25 @@ void detectDoG(const std::string& imagePath) {
 
     cv::cvtColor(dogContext->src, dogContext->gray, cv::COLOR_BGR2GRAY);
 
-    cv::createTrackbar("Sigma (first kernel)", windowName, &dogContext->sigma1, 100, onDoGTrackbar, dogContext);
-    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &dogContext->sigmaDiff, 100, onDoGTrackbar, dogContext);
-    cv::createTrackbar("Kernel Size", windowName, &dogContext->kernelSize, 21, onDoGTrackbar, dogContext);
+    cv::createTrackbar("Sigma (first kernel)", windowName, 
+        &dogContext->params.sigma1, 
+        DoGParams::MAX_SIGMA, 
+        onDoGTrackbar, 
+        dogContext
+    );
+
+    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, 
+        &dogContext->params.sigmaDiff, 
+        DoGParams::MAX_SIGMA_DIFF, 
+        onDoGTrackbar, 
+        dogContext
+    );
+    cv::createTrackbar("Kernel Size", windowName, 
+        &dogContext->params.kernelSize, 
+        DoGParams::MAX_KERNEL_SIZE, 
+        onDoGTrackbar, 
+        dogContext
+    );
 
     onDoGTrackbar(0, dogContext);
 
@@ -89,9 +126,29 @@ void detectDoGCamera() {
     cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
 
     DoGContext* dogContext = new DoGContext();
-    cv::createTrackbar("Sigma (first kernel)", windowName, &dogContext->sigma1, 100, onDoGTrackbar, dogContext);
-    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &dogContext->sigmaDiff, 100, onDoGTrackbar, dogContext);
-    cv::createTrackbar("Kernel Size", windowName, &dogContext->kernelSize, 21, onDoGTrackbar, dogContext);
+    cv::createTrackbar(
+        "Sigma (first kernel)", windowName, 
+        &dogContext->params.sigma1, 
+        DoGParams::MAX_SIGMA, 
+        onDoGTrackbar, 
+        dogContext
+    );
+
+    cv::createTrackbar(
+        "Sigma Diff (first to second kernel)", windowName, 
+        &dogContext->params.sigmaDiff, 
+        DoGParams::MAX_SIGMA_DIFF, 
+        onDoGTrackbar, 
+        dogContext
+    );
+
+    cv::createTrackbar(
+        "Kernel Size", windowName, 
+        &dogContext->params.kernelSize, 
+        DoGParams::MAX_KERNEL_SIZE, 
+        onDoGTrackbar, 
+        dogContext
+    );
 
     cv::Mat frame;
     while (true) {

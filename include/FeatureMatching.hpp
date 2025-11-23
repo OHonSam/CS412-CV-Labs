@@ -2,6 +2,20 @@
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <vector>
+#include "HarrisDetector.hpp"
+#include "DoGDetector.hpp"
+#include "BlobDetector.hpp"
+#include "SIFTDescriptor.hpp"
+#include "LBPDescriptor.hpp"
+
+
+struct MatchContext {
+    cv::Mat img1, img2, gray1, gray2;
+    IKeypointDetector* detector = nullptr;
+    IDescriptor* descriptor = nullptr;
+
+    int ratioTest_x100 = 75;
+};
 
 
 // Matching functions

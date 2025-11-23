@@ -1,13 +1,44 @@
 #include "BlobDetector.hpp" 
 #include <iostream>
 
+std::vector<cv::KeyPoint> BlobDetector::detect(const cv::Mat& gray) {
+    context.gray = gray.clone();
+
+    // Use SimpleBlobDetector with current context parameters
+    cv::SimpleBlobDetector::Params blobParams;
+    blobParams.filterByArea = context.params.filterByArea;
+    blobParams.minArea = context.params.minArea;
+    blobParams.maxArea = context.params.maxArea;
+    blobParams.filterByCircularity = context.params.filterByCircularity;
+    blobParams.filterByConvexity = context.params.filterByConvexity;
+    blobParams.filterByInertia = context.params.filterByInertia;
+    blobParams.minThreshold = context.params.minThreshold;
+    blobParams.maxThreshold = context.params.maxThreshold;
+    blobParams.thresholdStep = context.params.thresholdStep;
+
+    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(blobParams);
+    std::vector<cv::KeyPoint> keypoints;
+    detector->detect(context.gray, keypoints);
+    
+    return keypoints;
+}
+
+void BlobDetector::createTrackbars(const std::string& win, void* userdata) {
+    BlobContext* ctx = static_cast<BlobContext*>(userdata);
+
+    cv::createTrackbar("Min Threshold", win, &ctx->params.minThreshold, BlobParams::MAX_THRESHOLD, onBlobTrackbar, ctx);
+    cv::createTrackbar("Max Threshold", win, &ctx->params.maxThreshold, BlobParams::MAX_THRESHOLD, onBlobTrackbar, ctx);
+    cv::createTrackbar("Threshold Step", win, &ctx->params.thresholdStep, BlobParams::MAX_THRESHOLD_STEP, onBlobTrackbar, ctx);
+    cv::createTrackbar("Min Area", win, &ctx->params.minArea, BlobParams::MAX_AREA, onBlobTrackbar, ctx);
+}
+
 std::vector<cv::KeyPoint> myBlobDetection(const cv::Mat& gray, const BlobContext& context) {
     // Step 1 & 2: Threshold at multiple levels and collect centers
     std::vector<cv::Point2f> allCenters; // Store all centers from all thresholds
-    
-    for (float thresh = context.minThreshold;
-            thresh < context.maxThreshold;
-            thresh += context.thresholdStep) {
+
+    for (float thresh = context.params.minThreshold;
+            thresh < context.params.maxThreshold;
+            thresh += context.params.thresholdStep) {
 
         cv::Mat binaryImage;
         cv::threshold(gray, binaryImage, thresh, 255, cv::THRESH_BINARY);
@@ -17,7 +48,7 @@ std::vector<cv::KeyPoint> myBlobDetection(const cv::Mat& gray, const BlobContext
         
         for (const auto& contour : contours) {
             double area = cv::contourArea(contour);
-            if (area >= context.minArea && area <= context.maxArea) {
+            if (area >= context.params.minArea && area <= context.params.maxArea) {
                 cv::Moments M = cv::moments(contour);
                 if (M.m00 != 0) {
                     float cx = static_cast<float>(M.m10 / M.m00);
@@ -31,9 +62,9 @@ std::vector<cv::KeyPoint> myBlobDetection(const cv::Mat& gray, const BlobContext
     // Step 3: Group close centers using minDistBetweenBlobs
     std::vector<cv::KeyPoint> keypoints;
     std::vector<bool> used(allCenters.size(), false);
-    
-    float minDist = context.minDistBetweenBlobs;
-    
+
+    float minDist = context.params.minDistBetweenBlobs;
+
     for (size_t i = 0; i < allCenters.size(); i++) {
         if (used[i]) continue;
         
@@ -83,13 +114,13 @@ void onBlobTrackbar(int, void* userData) {
 
     cv::SimpleBlobDetector::Params blobParams;
 
-    blobParams.filterByArea = blobContext->filterByArea;
-    blobParams.filterByCircularity = blobContext->filterByCircularity;
-    blobParams.filterByConvexity = blobContext->filterByConvexity;
-    blobParams.filterByInertia = blobContext->filterByInertia;
-    blobParams.minThreshold = blobContext->minThreshold;
-    blobParams.maxThreshold = blobContext->maxThreshold;
-    blobParams.thresholdStep = blobContext->thresholdStep;
+    blobParams.filterByArea = blobContext->params.filterByArea;
+    blobParams.filterByCircularity = blobContext->params.filterByCircularity;
+    blobParams.filterByConvexity = blobContext->params.filterByConvexity;
+    blobParams.filterByInertia = blobContext->params.filterByInertia;
+    blobParams.minThreshold = blobContext->params.minThreshold;
+    blobParams.maxThreshold = blobContext->params.maxThreshold;
+    blobParams.thresholdStep = blobContext->params.thresholdStep;
 
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(blobParams);
     std::vector<cv::KeyPoint> keypoints;
@@ -119,9 +150,10 @@ void detectBlob(const std::string& imagePath) {
 
     cv::cvtColor(blobContext->src, blobContext->gray, cv::COLOR_BGR2GRAY);
 
-    cv::createTrackbar("Min Threshold", windowName, &blobContext->minThreshold, 255, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Max Threshold", windowName, &blobContext->maxThreshold, 255, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Threshold Step", windowName, &blobContext->thresholdStep, 10, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Min Threshold", windowName, &blobContext->params.minThreshold, BlobParams::MAX_THRESHOLD, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Max Threshold", windowName, &blobContext->params.maxThreshold, BlobParams::MAX_THRESHOLD, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Threshold Step", windowName, &blobContext->params.thresholdStep, BlobParams::MAX_THRESHOLD_STEP, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Min Area", windowName, &blobContext->params.minArea, BlobParams::MAX_AREA, onBlobTrackbar, blobContext);
 
     onBlobTrackbar(0, blobContext);
 
@@ -142,9 +174,10 @@ void detectBlobCamera() {
 
     BlobContext* blobContext = new BlobContext();
 
-    cv::createTrackbar("Min Threshold", windowName, &blobContext->minThreshold, 255, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Max Threshold", windowName, &blobContext->maxThreshold, 255, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Threshold Step", windowName, &blobContext->thresholdStep, 10, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Min Threshold", windowName, &blobContext->params.minThreshold, BlobParams::MAX_THRESHOLD, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Max Threshold", windowName, &blobContext->params.maxThreshold, BlobParams::MAX_THRESHOLD, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Threshold Step", windowName, &blobContext->params.thresholdStep, BlobParams::MAX_THRESHOLD_STEP, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Min Area", windowName, &blobContext->params.minArea, BlobParams::MAX_AREA, onBlobTrackbar, blobContext);
 
     cv::Mat frame;
     while (true) {
