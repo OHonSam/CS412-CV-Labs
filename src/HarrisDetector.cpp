@@ -17,7 +17,7 @@ cv::Mat HarrisDetector::computeHarrisResponse(const cv::Mat& gray,
                      params.getK());
     
     // Normalize to 0-255 range for consistent thresholding
-    cv::normalize(response, normalized, 0, 255, cv::NORM_MINMAX, CV_32FC1);
+    cv::normalize(response, normalized, 0, 255, cv::NORM_MINMAX, CV_32F, cv::Mat());
     
     return normalized;
 }
@@ -25,8 +25,13 @@ cv::Mat HarrisDetector::computeHarrisResponse(const cv::Mat& gray,
 std::vector<cv::KeyPoint> HarrisDetector::detect(const cv::Mat& gray) {
     context.gray = gray.clone();
     context.params = HarrisParams(); // Use default parameters
+
+    if (gray.channels() != 1) {
+        std::cerr << "Error: Input image must be grayscale." << std::endl;
+        return {};
+    }
     
-    cv::Mat response = computeHarrisResponse(gray, context.params);
+    cv::Mat response = computeHarrisResponse(context.gray, context.params);
     return extractKeypoints(response, static_cast<float>(context.params.threshold));
 }
 
@@ -103,7 +108,7 @@ std::vector<cv::KeyPoint> getHarrisKeypoints(const cv::Mat& harrisResponse, floa
         for (int x = 0; x < harrisResponse.cols; x++) {
             float response = harrisResponse.at<float>(y, x);
             if (response > threshold) {
-                keypoints.emplace_back(cv::Point2f(x, y), 5.0f, -1, response);
+                keypoints.push_back(cv::KeyPoint(cv::Point2f(x, y), 5.f, -1, response));
             }
         }
     }
@@ -113,6 +118,14 @@ std::vector<cv::KeyPoint> getHarrisKeypoints(const cv::Mat& harrisResponse, floa
 
 void onHarrisTrackbar(int, void* userData) {
     HarrisContext* ctx = static_cast<HarrisContext*>(userData);
+
+    if (ctx->src.channels() == 3)
+        cv::cvtColor(ctx->src, ctx->gray, cv::COLOR_BGR2GRAY);
+
+    if (ctx->gray.empty()) {
+        std::cerr << "Error: Grayscale image is empty." << std::endl;
+        return;
+    }
     
     // Compute Harris response with validated parameters
     cv::Mat response, normalized;
@@ -127,7 +140,7 @@ void onHarrisTrackbar(int, void* userData) {
     //                ctx->params.getValidApertureSize(),
     //                ctx->params.getK());
     
-    cv::normalize(response, normalized, 0, 255, cv::NORM_MINMAX, CV_32FC1);
+    cv::normalize(response, normalized, 0, 255, cv::NORM_MINMAX, CV_32F, cv::Mat());
     
     // Extract and draw keypoints
     std::vector<cv::KeyPoint> keypoints = getHarrisKeypoints(
@@ -232,7 +245,7 @@ void detectHarrisCamera() {
         if (frame.empty()) break;
 
         // Update context with new frame
-        ctx->src = frame.clone();
+        ctx->src = frame;
         cv::cvtColor(ctx->src, ctx->gray, cv::COLOR_BGR2GRAY);
 
         // Process and display

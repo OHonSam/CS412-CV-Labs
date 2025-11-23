@@ -233,6 +233,8 @@ void computeLBPDescriptors(const cv::Mat& gray,
 void onMatchTrackbar(int, void* userdata) {
     auto* ctx = static_cast<MatchContext*>(userdata);
 
+    if (ctx->gray1.empty() || ctx->gray2.empty()) return;
+
     auto kp1 = ctx->detector->detect(ctx->gray1);
     auto kp2 = ctx->detector->detect(ctx->gray2);
 

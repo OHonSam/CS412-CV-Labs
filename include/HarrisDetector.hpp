@@ -23,7 +23,7 @@ struct HarrisParams {
     int getValidBlockSize() const { return std::max(2, blockSize); }
     int getValidApertureSize() const { 
         int odd = (apertureSize / 2) * 2 + 1;
-        return std::min(odd, 7);
+        return std::max(3, odd);
     }
     double getK() const { return k_x100 / 100.0; }
 };
