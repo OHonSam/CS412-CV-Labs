@@ -62,14 +62,9 @@ void onHarrisTrackbar(int, void* userData) {
     HarrisContext* ctx = static_cast<HarrisContext*>(userData);
 
     // 1. Constraints
-    // Aperture size must be odd (1, 3, 5, 7)
-    int odd_aperture = (ctx->apertureSize / 2) * 2 + 1;
-    if(odd_aperture > 7) odd_aperture = 7;
-    
-    // Block size must be at least 2
-    int safe_block = std::max(2, ctx->blockSize);
-
-    double k = ctx->k_x100 / 100.0;
+    int odd_aperture = ctx->getOddAperture();
+    int safe_block = ctx->getSafeBlock();
+    double k = ctx->getK();
 
     // 2. Run Harris
     cv::Mat dst, dst_norm;
@@ -96,6 +91,7 @@ void onHarrisTrackbar(int, void* userData) {
 void detectHarris(const std::string& imagePath) {
     HarrisContext* ctx = new HarrisContext();
     ctx->src = cv::imread(imagePath, cv::IMREAD_COLOR);
+
     if (ctx->src.empty()) { std::cerr << "Could not read image: " << imagePath << std::endl; return; }
 
     cv::cvtColor(ctx->src, ctx->gray, cv::COLOR_BGR2GRAY);

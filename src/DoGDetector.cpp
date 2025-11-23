@@ -21,14 +21,8 @@ void onDoGTrackbar(int, void* userData) {
     DoGContext* dogContext = static_cast<DoGContext*>(userData);
     if (dogContext->src.empty()) return;
 
-    // Ensure kernel size is odd and at least 3
-    int ksize = dogContext->kernelSize;
-    ksize = (ksize / 2) * 2 + 1;
-    if (ksize < 3) ksize = 3;
-
-    // Ensure sigma difference is at least 1
-    int sigmaDiff = dogContext->sigmaDiff;
-    if (sigmaDiff < 1) sigmaDiff = 1;
+    int ksize = dogContext->getOddKernelSize();
+    int sigmaDiff = dogContext->getSafeSigmaDiff();
 
     // // Create Gaussian kernels
     // cv::Mat gauss1 = createGaussianFilter(ksize);
