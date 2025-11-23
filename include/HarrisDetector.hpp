@@ -58,6 +58,7 @@ void detectHarrisCamera();
 
 // Helper functions
 void onHarrisTrackbar(int, void* userData);
+void onHarrisMatchingTrackbar(int, void* userData);
 void myCornerHarris(const cv::Mat& src, cv::Mat& dst, int blockSize, 
                     int apertureSize, double k);
 std::vector<cv::KeyPoint> getHarrisKeypoints(const cv::Mat& harrisResponse, 

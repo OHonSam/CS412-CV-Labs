@@ -27,8 +27,7 @@ std::vector<cv::KeyPoint> HarrisDetector::detect(const cv::Mat& gray) {
     context.params = HarrisParams(); // Use default parameters
 
     if (gray.channels() != 1) {
-        std::cerr << "Error: Input image must be grayscale." << std::endl;
-        return {};
+        cv::cvtColor(gray, context.gray, cv::COLOR_BGR2GRAY);
     }
     
     cv::Mat response = computeHarrisResponse(context.gray, context.params);
@@ -41,22 +40,31 @@ void HarrisDetector::createTrackbars(const std::string& win, void* userdata) {
     cv::createTrackbar("Block Size", win, 
                        &ctx->params.blockSize, 
                        HarrisParams::MAX_BLOCK_SIZE, 
-                       onHarrisTrackbar, ctx);
+                       onHarrisMatchingTrackbar, ctx);
                        
     cv::createTrackbar("Aperture (Odd)", win, 
                        &ctx->params.apertureSize, 
                        HarrisParams::MAX_APERTURE_SIZE, 
-                       onHarrisTrackbar, ctx);
+                       onHarrisMatchingTrackbar, ctx);
                        
     cv::createTrackbar("K (x100)", win, 
                        &ctx->params.k_x100, 
                        HarrisParams::MAX_K_VALUE, 
-                       onHarrisTrackbar, ctx);
+                       onHarrisMatchingTrackbar, ctx);
                        
     cv::createTrackbar("Threshold", win, 
                        &ctx->params.threshold, 
                        HarrisParams::MAX_THRESHOLD, 
-                       onHarrisTrackbar, ctx);
+                       onHarrisMatchingTrackbar, ctx);
+}
+
+void onHarrisMatchingTrackbar(int, void* userData) {
+    HarrisContext* ctx = static_cast<HarrisContext*>(userData);
+    // Update parameters based on trackbar positions
+    ctx->params.blockSize = cv::getTrackbarPos("Block Size", "Feature Matches");
+    ctx->params.apertureSize = cv::getTrackbarPos("Aperture (Odd)", "Feature Matches");
+    ctx->params.k_x100 = cv::getTrackbarPos("K (x100)", "Feature Matches");
+    ctx->params.threshold = cv::getTrackbarPos("Threshold", "Feature Matches");
 }
 
 void myCornerHarris(cv::Mat& srcGray, cv::Mat& dst, int blockSize, int apertureSize, double k) {
