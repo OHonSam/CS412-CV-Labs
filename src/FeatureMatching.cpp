@@ -187,7 +187,7 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
     }
 
     // Convert two images to the same size
-    // cv::resize(context->img1, context->img1, context->img2.size());
+    cv::resize(context->img1, context->img1, context->img2.size());
 
     cv::cvtColor(context->img1, context->gray1, cv::COLOR_BGR2GRAY);
     cv::cvtColor(context->img2, context->gray2, cv::COLOR_BGR2GRAY);

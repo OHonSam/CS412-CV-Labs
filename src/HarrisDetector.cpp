@@ -55,7 +55,7 @@ std::vector<cv::KeyPoint> getHarrisKeypoints(const cv::Mat& harrisResponse, floa
         }
     }
 
-    // Limit to 5000 strongest keypoints (for example)
+    // Limit to 5000 strongest keypoints
     std::sort(keypoints.begin(), keypoints.end(),
               [](const cv::KeyPoint& a, const cv::KeyPoint& b) { return a.response > b.response; });
     if (keypoints.size() > 5000)

@@ -90,6 +90,11 @@ void onBlobTrackbar(int, void* userData) {
     blobParams.minThreshold = blobContext->minThreshold;
     blobParams.maxThreshold = blobContext->maxThreshold;
     blobParams.thresholdStep = blobContext->getSafeThresholdStep();
+    blobParams.minArea = blobContext->minArea;
+    blobParams.maxArea = blobContext->maxArea;
+    blobParams.minCircularity = blobContext->getMinCircularity();
+    blobParams.minConvexity = blobContext->getMinConvexity();
+    blobParams.minInertiaRatio = blobContext->getMinInertia();
 
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(blobParams);
     std::vector<cv::KeyPoint> keypoints;
@@ -145,6 +150,9 @@ void detectBlobCamera() {
     cv::createTrackbar("Min Threshold", windowName, &blobContext->minThreshold, 255, onBlobTrackbar, blobContext);
     cv::createTrackbar("Max Threshold", windowName, &blobContext->maxThreshold, 255, onBlobTrackbar, blobContext);
     cv::createTrackbar("Threshold Step", windowName, &blobContext->thresholdStep, 10, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Min Circularity", windowName, &blobContext->minCircularity, 100, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Min Convexity", windowName, &blobContext->minConvexity, 100, onBlobTrackbar, blobContext);
+    cv::createTrackbar("Min Inertia", windowName, &blobContext->minInertia, 100, onBlobTrackbar, blobContext);
 
     cv::Mat frame;
     while (true) {
