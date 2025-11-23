@@ -14,6 +14,19 @@ struct HarrisContext {
     int max_harris_ksize = 7;
     int max_harris_k_x100 = 10;
     int max_harris_threshold = 255;
+
+    int getOddAperture() const {
+        int odd_aperture = (apertureSize / 2) * 2 + 1;
+        return std::max(3, odd_aperture);
+    }
+
+    int getSafeBlock() const {
+        return std::max(2, blockSize);
+    }
+
+    double getK() const {
+        return k_x100 / 100.0;
+    }
 };
 
 void detectHarris(const std::string& imagePath);

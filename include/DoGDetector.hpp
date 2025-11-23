@@ -11,6 +11,15 @@ struct DoGContext {
     int sigmaDiff = 1;  // Difference in standard deviation for the second Gaussian
     int kernelSize = 5;  // Size of the Gaussian kernel
     int threshold = 200; // Default value (0-255)
+
+    int getOddKernelSize() const {
+        int odd_ksize = (kernelSize / 2) * 2 + 1;
+        return std::max(3, odd_ksize);
+    }
+
+    int getSafeSigmaDiff() const {
+        return std::max(1, sigmaDiff);
+    }
 };
 
 void onDoGTrackbar(int, void* userData);
