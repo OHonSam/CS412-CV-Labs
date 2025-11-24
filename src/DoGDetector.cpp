@@ -8,7 +8,7 @@ std::vector<cv::KeyPoint> getDoGKeypoints(const cv::Mat& dogResponse, float thre
         for (int x = 0; x < dogResponse.cols; x++) {
             float response = dogResponse.at<uchar>(y, x);
             if (response > threshold) {
-                keypoints.push_back(cv::KeyPoint(cv::Point2f(x, y), 5.f, -1, response));
+                keypoints.push_back(cv::KeyPoint(cv::Point2f(x, y), 10.f, -1, response));
             }
         }
     }
@@ -67,15 +67,17 @@ void createDoGTrackbars(const std::string& windowName, DoGContext* ctx, void (*o
 void detectDoG(const std::string& imagePath) {
     DoGContext* dogContext = new DoGContext;
 
-    std::string windowName = "DoG Detection";
-    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+    std::string windowName1 = "DoG Detection";
+    std::string windowName2 = "DoG Response";
+    cv::namedWindow(windowName1, cv::WINDOW_GUI_EXPANDED);
+    cv::namedWindow(windowName2, cv::WINDOW_GUI_EXPANDED);
 
     dogContext->src = cv::imread(imagePath, cv::IMREAD_COLOR);
     if (dogContext->src.empty()) { std::cerr << "Could not read image: " << imagePath << std::endl; return; }
 
     cv::cvtColor(dogContext->src, dogContext->gray, cv::COLOR_BGR2GRAY);
 
-    createDoGTrackbars(windowName, dogContext, onDoGTrackbar);
+    createDoGTrackbars(windowName1, dogContext, onDoGTrackbar);
 
     onDoGTrackbar(0, dogContext);
 
@@ -90,11 +92,13 @@ void detectDoGCamera() {
         return;
     }
 
-    std::string windowName = "DoG Detection";
-    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+    std::string windowName1 = "DoG Detection";
+    cv::namedWindow(windowName1, cv::WINDOW_GUI_EXPANDED);
+    std::string windowName2 = "DoG Response";
+    cv::namedWindow(windowName2, cv::WINDOW_GUI_EXPANDED);
 
     DoGContext* dogContext = new DoGContext();
-    createDoGTrackbars(windowName, dogContext, onDoGTrackbar);
+    createDoGTrackbars(windowName1, dogContext, onDoGTrackbar);
 
     cv::Mat frame;
     while (true) {

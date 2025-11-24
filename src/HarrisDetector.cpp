@@ -50,7 +50,7 @@ std::vector<cv::KeyPoint> getHarrisKeypoints(const cv::Mat& harrisResponse, floa
         for (int x = 0; x < harrisResponse.cols; x++) {
             float response = harrisResponse.at<float>(y, x);
             if (response > threshold) {
-                keypoints.push_back(cv::KeyPoint(cv::Point2f(x, y), 5.f, -1, response));
+                keypoints.push_back(cv::KeyPoint(cv::Point2f(x, y), 10.f, -1, response));
             }
         }
     }
@@ -109,11 +109,13 @@ void detectHarris(const std::string& imagePath) {
 
     cv::cvtColor(ctx->src, ctx->gray, cv::COLOR_BGR2GRAY);
 
-    std::string windowName = "Harris Corners";
-    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
+    std::string windowName1 = "Harris Corners";
+    cv::namedWindow(windowName1, cv::WINDOW_NORMAL);
+    std::string windowName2 = "Harris Response";
+    cv::namedWindow(windowName2, cv::WINDOW_NORMAL);
 
     // Create trackbars to adjust parameters
-    createHarrisTrackbars(windowName, ctx, onHarrisTrackbar);
+    createHarrisTrackbars(windowName1, ctx, onHarrisTrackbar);
 
     // Initial call to display corners
     onHarrisTrackbar(0, ctx);
