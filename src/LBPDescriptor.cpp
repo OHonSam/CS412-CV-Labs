@@ -1,11 +1,18 @@
-#include "SIFTDescriptor.hpp"
+#include "LBPDescriptor.hpp"
 #include <opencv2/opencv.hpp>
+
+void createLBPTrackbars(const std::string& windowName, LBPContext* ctx, void (*onCallback)(int, void*)) {
+    cv::createTrackbar("LBP Radius", windowName, &ctx->radius, 10, onCallback, ctx);
+    cv::createTrackbar("LBP Patch Size", windowName, &ctx->patchSize, 64, onCallback, ctx);
+}
 
 void computeLBPDescriptors(const cv::Mat& gray, 
                             const std::vector<cv::KeyPoint>& keypoints, 
-                            cv::Mat& descriptors) {
-    const int radius = 1;
-    const int patchSize = 16;
+                            cv::Mat& descriptors,
+                            const LBPContext& context
+                        ) {
+    const int radius = context.radius;
+    const int patchSize = context.patchSize;
     descriptors = cv::Mat::zeros(static_cast<int>(keypoints.size()), 256, CV_32F);
 
     for (size_t i = 0; i < keypoints.size(); ++i) {

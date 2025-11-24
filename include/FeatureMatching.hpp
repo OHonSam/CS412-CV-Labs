@@ -28,6 +28,7 @@ struct MatchContext {
     BlobContext blobContext;
 
     SIFTContext siftContext;
+    LBPContext lbpContext;
 
     int ratioThreshold = 75; // Lowe's ratio test threshold (scaled by 100)
 };

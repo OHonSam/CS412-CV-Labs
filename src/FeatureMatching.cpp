@@ -94,8 +94,8 @@ void onMatchTrackbar(int, void* userData) {
         computeSIFTDescriptors(context->gray1, keypoints1, descriptors1, context->siftContext);
         computeSIFTDescriptors(context->gray2, keypoints2, descriptors2, context->siftContext);
     } else if (context->descriptorType == "lbp") {
-        computeLBPDescriptors(context->gray1, keypoints1, descriptors1);
-        computeLBPDescriptors(context->gray2, keypoints2, descriptors2);
+        computeLBPDescriptors(context->gray1, keypoints1, descriptors1, context->lbpContext);
+        computeLBPDescriptors(context->gray2, keypoints2, descriptors2, context->lbpContext);
     }
 
     if (descriptors1.empty() || descriptors2.empty()) {
@@ -207,6 +207,8 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
 
     if (context->descriptorType == "sift") {
         createSIFTTrackbars(windowName, &context->siftContext, onMatchTrackbar);
+    } else if (context->descriptorType == "lbp") {
+        createLBPTrackbars(windowName, &context->lbpContext, onMatchTrackbar);
     }
 
     cv::createTrackbar("Ratio Thresh (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
@@ -256,6 +258,12 @@ void matchFeaturesCamera(const std::string& detectorType, const std::string& des
     } else if (context->detectorType == "blob") {
         createBlobTrackbars(windowName, &context->blobContext, onMatchTrackbar);
     }      
+
+    if (context->descriptorType == "sift") {
+        createSIFTTrackbars(windowName, &context->siftContext, onMatchTrackbar);
+    } else if (context->descriptorType == "lbp") {
+        createLBPTrackbars(windowName, &context->lbpContext, onMatchTrackbar);
+    }
 
     cv::createTrackbar("Lowe's Ratio (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
     
