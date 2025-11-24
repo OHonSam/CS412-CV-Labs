@@ -211,7 +211,7 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
         createLBPTrackbars(windowName, &context->lbpContext, onMatchTrackbar);
     }
 
-    cv::createTrackbar("Ratio Thresh (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
+    cv::createTrackbar("Lowe's Ratio (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
 
     // Initial call to display matches
     onMatchTrackbar(0, context);

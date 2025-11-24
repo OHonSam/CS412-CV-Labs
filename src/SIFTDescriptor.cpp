@@ -19,9 +19,9 @@ void computeSIFTDescriptors(const cv::Mat& gray,
 }
 
 void createSIFTTrackbars(const std::string& windowName, SIFTContext* ctx, void (*onCallback)(int, void*)) {
-    cv::createTrackbar("nFeatures", windowName, &ctx->nFeatures, 1000, onCallback, ctx);
-    cv::createTrackbar("nOctaveLayers", windowName, &ctx->nOctaveLayers, 10, onCallback, ctx);
-    cv::createTrackbar("ContrastThreshold x100", windowName, &ctx->contrastThreshold_x100, 100, onCallback, ctx);
-    cv::createTrackbar("EdgeThreshold x10", windowName, &ctx->edgeThreshold_x10, 200, onCallback, ctx);
-    cv::createTrackbar("Sigma x10", windowName, &ctx->sigma_x10, 50, onCallback, ctx);
+    cv::createTrackbar("SIFT nFeatures", windowName, &ctx->nFeatures, 1000, onCallback, ctx);
+    cv::createTrackbar("SIFT nOctaveLayers", windowName, &ctx->nOctaveLayers, 10, onCallback, ctx);
+    cv::createTrackbar("SIFT ContrastThreshold x100", windowName, &ctx->contrastThreshold_x100, 100, onCallback, ctx);
+    cv::createTrackbar("SIFT EdgeThreshold x10", windowName, &ctx->edgeThreshold_x10, 200, onCallback, ctx);
+    cv::createTrackbar("SIFT Sigma x10", windowName, &ctx->sigma_x10, 50, onCallback, ctx);
 }
