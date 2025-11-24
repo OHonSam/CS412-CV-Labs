@@ -113,6 +113,15 @@ void onBlobTrackbar(int, void* userData) {
     cv::imshow("Blob Detection", result);
 }
 
+void createBlobTrackbars(const std::string& windowName, BlobContext* ctx, void (*onCallback)(int, void*)) {
+    cv::createTrackbar("Min Threshold", windowName, &ctx->minThreshold, 255, onCallback, ctx);
+    cv::createTrackbar("Max Threshold", windowName, &ctx->maxThreshold, 255, onCallback, ctx);
+    cv::createTrackbar("Threshold Step", windowName, &ctx->thresholdStep, 10, onCallback, ctx);
+    cv::createTrackbar("Min Circularity", windowName, &ctx->minCircularity, 100, onCallback, ctx);
+    cv::createTrackbar("Min Convexity", windowName, &ctx->minConvexity, 100, onCallback, ctx);
+    cv::createTrackbar("Min Inertia", windowName, &ctx->minInertia, 100, onCallback, ctx);
+}
+
 void detectBlob(const std::string& imagePath) {
     BlobContext* blobContext = new BlobContext;
 
@@ -124,9 +133,7 @@ void detectBlob(const std::string& imagePath) {
 
     cv::cvtColor(blobContext->src, blobContext->gray, cv::COLOR_BGR2GRAY);
 
-    cv::createTrackbar("Min Threshold", windowName, &blobContext->minThreshold, 255, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Max Threshold", windowName, &blobContext->maxThreshold, 255, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Threshold Step", windowName, &blobContext->thresholdStep, 10, onBlobTrackbar, blobContext);
+    createBlobTrackbars(windowName, blobContext, onBlobTrackbar);
 
     onBlobTrackbar(0, blobContext);
 
@@ -146,13 +153,7 @@ void detectBlobCamera() {
     cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
 
     BlobContext* blobContext = new BlobContext();
-
-    cv::createTrackbar("Min Threshold", windowName, &blobContext->minThreshold, 255, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Max Threshold", windowName, &blobContext->maxThreshold, 255, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Threshold Step", windowName, &blobContext->thresholdStep, 10, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Min Circularity", windowName, &blobContext->minCircularity, 100, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Min Convexity", windowName, &blobContext->minConvexity, 100, onBlobTrackbar, blobContext);
-    cv::createTrackbar("Min Inertia", windowName, &blobContext->minInertia, 100, onBlobTrackbar, blobContext);
+    createBlobTrackbars(windowName, blobContext, onBlobTrackbar);
 
     cv::Mat frame;
     while (true) {

@@ -33,4 +33,5 @@ void detectHarris(const std::string& imagePath);
 void detectHarrisCamera();
 std::vector<cv::KeyPoint> getHarrisKeypoints(const cv::Mat& harrisResponse, float threshold);
 void onHarrisTrackbar(int, void* userData);
+void createHarrisTrackbars(const std::string& windowName, HarrisContext* ctx, void (*onCallback)(int, void*));
 void myCornerHarris(const cv::Mat& src, cv::Mat& dst, int blockSize, int apertureSize, double k);

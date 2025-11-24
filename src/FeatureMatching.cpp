@@ -199,24 +199,13 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
     cv::namedWindow(windowName, cv::WINDOW_NORMAL);
 
     if (context->detectorType == "harris") {
-        cv::createTrackbar("Block Size", windowName, &context->harrisContext.blockSize, context->harrisContext.max_harris_blockSize, onMatchTrackbar, context);
-        cv::createTrackbar("Aperture (Odd)", windowName, &context->harrisContext.apertureSize, context->harrisContext.max_harris_ksize, onMatchTrackbar, context);
-        cv::createTrackbar("K (x100)", windowName, &context->harrisContext.k_x100, context->harrisContext.max_harris_k_x100, onMatchTrackbar, context);
-        cv::createTrackbar("Threshold", windowName, &context->harrisContext.threshold, context->harrisContext.max_harris_threshold, onMatchTrackbar, context);
+        createHarrisTrackbars(windowName, &context->harrisContext, onMatchTrackbar);
 
     } else if (context->detectorType == "dog") {
-        cv::createTrackbar("Sigma (first kernel)", windowName, &context->dogContext.sigma1, 100, onMatchTrackbar, context);
-        cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &context->dogContext.sigmaDiff, 100, onMatchTrackbar, context);
-        cv::createTrackbar("Kernel Size", windowName, &context->dogContext.kernelSize, 21, onMatchTrackbar, context);
-        cv::createTrackbar("Threshold", windowName, &context->dogContext.threshold, 255, onMatchTrackbar, context);
+        createDoGTrackbars(windowName, &context->dogContext, onMatchTrackbar);
 
     } else if (context->detectorType == "blob") {
-        cv::createTrackbar("Min Threshold", windowName, &context->blobContext.minThreshold, 255, onMatchTrackbar, context);
-        cv::createTrackbar("Max Threshold", windowName, &context->blobContext.maxThreshold, 255, onMatchTrackbar, context);
-        cv::createTrackbar("Threshold Step", windowName, &context->blobContext.thresholdStep, 10, onMatchTrackbar, context);
-        cv::createTrackbar("Min Circularity", windowName, &context->blobContext.minCircularity, 100, onMatchTrackbar, context);
-        cv::createTrackbar("Min Convexity", windowName, &context->blobContext.minConvexity, 100, onMatchTrackbar, context);
-        cv::createTrackbar("Min Inertia", windowName, &context->blobContext.minInertia, 100, onMatchTrackbar, context);
+        createBlobTrackbars(windowName, &context->blobContext, onMatchTrackbar);
     }
 
     cv::createTrackbar("Ratio Thresh (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
@@ -258,21 +247,13 @@ void matchFeaturesCamera(const std::string& detectorType, const std::string& des
     cv::namedWindow(windowName, cv::WINDOW_NORMAL);
 
     if (context->detectorType == "harris") {
-        cv::createTrackbar("Block Size", windowName, &context->harrisContext.blockSize, context->harrisContext.max_harris_blockSize, onMatchTrackbar, context);
-        cv::createTrackbar("Aperture (Odd)", windowName, &context->harrisContext.apertureSize, context->harrisContext.max_harris_ksize, onMatchTrackbar, context);
-        cv::createTrackbar("K (x100)", windowName, &context->harrisContext.k_x100, context->harrisContext.max_harris_k_x100, onMatchTrackbar, context);
-        cv::createTrackbar("Threshold", windowName, &context->harrisContext.threshold, context->harrisContext.max_harris_threshold, onMatchTrackbar, context);
+        createHarrisTrackbars(windowName, &context->harrisContext, onMatchTrackbar);
 
     } else if (context->detectorType == "dog") {
-        cv::createTrackbar("Sigma (first kernel)", windowName, &context->dogContext.sigma1, 100, onMatchTrackbar, context);
-        cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &context->dogContext.sigmaDiff, 100, onMatchTrackbar, context);
-        cv::createTrackbar("Kernel Size", windowName, &context->dogContext.kernelSize, 21, onMatchTrackbar, context);
-        cv::createTrackbar("Threshold", windowName, &context->dogContext.threshold, 255, onMatchTrackbar, context);
+        createDoGTrackbars(windowName, &context->dogContext, onMatchTrackbar);
 
     } else if (context->detectorType == "blob") {
-        cv::createTrackbar("Min Threshold", windowName, &context->blobContext.minThreshold, 255, onMatchTrackbar, context);
-        cv::createTrackbar("Max Threshold", windowName, &context->blobContext.maxThreshold, 255, onMatchTrackbar, context);
-        cv::createTrackbar("Threshold Step", windowName, &context->blobContext.thresholdStep, 10, onMatchTrackbar, context);
+        createBlobTrackbars(windowName, &context->blobContext, onMatchTrackbar);
     }      
 
     cv::createTrackbar("Ratio Thresh (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);

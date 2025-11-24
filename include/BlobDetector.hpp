@@ -47,4 +47,5 @@ void detectBlob(const std::string& imagePath);
 void detectBlobCamera();
 void onBlobTrackbar(int, void* userData);
 std::vector<cv::KeyPoint> myBlobDetection(const cv::Mat& gray, const BlobContext& context);
+void createBlobTrackbars(const std::string& windowName, BlobContext* ctx, void (*onCallback)(int, void*));
 void detectDoG(const std::string& imagePath);

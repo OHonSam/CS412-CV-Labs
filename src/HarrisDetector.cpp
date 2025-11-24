@@ -94,6 +94,13 @@ void onHarrisTrackbar(int, void* userData) {
     cv::imshow("Harris Response", dst_norm_scaled);
 }
 
+void createHarrisTrackbars(const std::string& windowName, HarrisContext* ctx, void (*onCallback)(int, void*)) {
+    cv::createTrackbar("Block Size", windowName, &ctx->blockSize, ctx->max_harris_blockSize, onCallback, ctx);
+    cv::createTrackbar("Aperture (Odd)", windowName, &ctx->apertureSize, ctx->max_harris_ksize, onCallback, ctx);
+    cv::createTrackbar("K (x100)", windowName, &ctx->k_x100, ctx->max_harris_k_x100, onCallback, ctx);
+    cv::createTrackbar("Threshold", windowName, &ctx->threshold, ctx->max_harris_threshold, onCallback, ctx);
+}
+
 void detectHarris(const std::string& imagePath) {
     HarrisContext* ctx = new HarrisContext();
     ctx->src = cv::imread(imagePath, cv::IMREAD_COLOR);
@@ -106,10 +113,7 @@ void detectHarris(const std::string& imagePath) {
     cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
 
     // Create trackbars to adjust parameters
-    cv::createTrackbar("Block Size", windowName, &ctx->blockSize, ctx->max_harris_blockSize, onHarrisTrackbar, ctx);
-    cv::createTrackbar("Aperture (Odd)", windowName, &ctx->apertureSize, ctx->max_harris_ksize, onHarrisTrackbar, ctx);
-    cv::createTrackbar("K (x100)", windowName, &ctx->k_x100, ctx->max_harris_k_x100, onHarrisTrackbar, ctx);
-    cv::createTrackbar("Threshold", windowName, &ctx->threshold, ctx->max_harris_threshold, onHarrisTrackbar, ctx);
+    createHarrisTrackbars(windowName, ctx, onHarrisTrackbar);
 
     // Initial call to display corners
     onHarrisTrackbar(0, ctx);

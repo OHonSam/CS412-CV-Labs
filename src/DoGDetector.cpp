@@ -57,6 +57,13 @@ void onDoGTrackbar(int, void* userData) {
     cv::imshow("DoG Response", dogNorm);
 }
 
+void createDoGTrackbars(const std::string& windowName, DoGContext* ctx, void (*onCallback)(int, void*)) {
+    cv::createTrackbar("Sigma (first kernel)", windowName, &ctx->sigma1, 100, onCallback, ctx);
+    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &ctx->sigmaDiff, 100, onCallback, ctx);
+    cv::createTrackbar("Kernel Size", windowName, &ctx->kernelSize, 21, onCallback, ctx);
+    cv::createTrackbar("Threshold", windowName, &ctx->threshold, 255, onCallback, ctx);
+}
+
 void detectDoG(const std::string& imagePath) {
     DoGContext* dogContext = new DoGContext;
 
@@ -68,9 +75,7 @@ void detectDoG(const std::string& imagePath) {
 
     cv::cvtColor(dogContext->src, dogContext->gray, cv::COLOR_BGR2GRAY);
 
-    cv::createTrackbar("Sigma (first kernel)", windowName, &dogContext->sigma1, 100, onDoGTrackbar, dogContext);
-    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &dogContext->sigmaDiff, 100, onDoGTrackbar, dogContext);
-    cv::createTrackbar("Kernel Size", windowName, &dogContext->kernelSize, 21, onDoGTrackbar, dogContext);
+    createDoGTrackbars(windowName, dogContext, onDoGTrackbar);
 
     onDoGTrackbar(0, dogContext);
 
@@ -89,9 +94,7 @@ void detectDoGCamera() {
     cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
 
     DoGContext* dogContext = new DoGContext();
-    cv::createTrackbar("Sigma (first kernel)", windowName, &dogContext->sigma1, 100, onDoGTrackbar, dogContext);
-    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &dogContext->sigmaDiff, 100, onDoGTrackbar, dogContext);
-    cv::createTrackbar("Kernel Size", windowName, &dogContext->kernelSize, 21, onDoGTrackbar, dogContext);
+    createDoGTrackbars(windowName, dogContext, onDoGTrackbar);
 
     cv::Mat frame;
     while (true) {

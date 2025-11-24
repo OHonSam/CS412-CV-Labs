@@ -23,6 +23,7 @@ struct DoGContext {
 };
 
 void onDoGTrackbar(int, void* userData);
+void createDoGTrackbars(const std::string& windowName, DoGContext* ctx, void (*onCallback)(int, void*));
 std::vector<cv::KeyPoint> getDoGKeypoints(const cv::Mat& dogResponse, float threshold);
 void detectDoG(const std::string& imagePath);
 void detectDoGCamera();
