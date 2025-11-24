@@ -1,9 +1,4 @@
 #include "FeatureMatching.hpp"
-#include "HarrisDetector.hpp"
-#include "DoGDetector.hpp"
-#include "BlobDetector.hpp"
-#include "SIFTDescriptor.hpp"
-#include "LBPDescriptor.hpp"
 #include <iostream>
 
 cv::BFMatcher createMatcher(const std::string& descriptorType) {
@@ -96,8 +91,8 @@ void onMatchTrackbar(int, void* userData) {
     // Compute descriptors
     cv::Mat descriptors1, descriptors2;
     if (context->descriptorType == "sift") {
-        computeSIFTDescriptors(context->gray1, keypoints1, descriptors1);
-        computeSIFTDescriptors(context->gray2, keypoints2, descriptors2);
+        computeSIFTDescriptors(context->gray1, keypoints1, descriptors1, context->siftContext);
+        computeSIFTDescriptors(context->gray2, keypoints2, descriptors2, context->siftContext);
     } else if (context->descriptorType == "lbp") {
         computeLBPDescriptors(context->gray1, keypoints1, descriptors1);
         computeLBPDescriptors(context->gray2, keypoints2, descriptors2);
@@ -210,6 +205,10 @@ void matchFeatures(const std::string& detectorType, const std::string& descripto
         createBlobTrackbars(windowName, &context->blobContext, onMatchTrackbar);
     }
 
+    if (context->descriptorType == "sift") {
+        createSIFTTrackbars(windowName, &context->siftContext, onMatchTrackbar);
+    }
+
     cv::createTrackbar("Ratio Thresh (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
 
     // Initial call to display matches
@@ -258,7 +257,7 @@ void matchFeaturesCamera(const std::string& detectorType, const std::string& des
         createBlobTrackbars(windowName, &context->blobContext, onMatchTrackbar);
     }      
 
-    cv::createTrackbar("Ratio Thresh (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
+    cv::createTrackbar("Lowe's Ratio (x100)", windowName, &context->ratioThreshold, 100, onMatchTrackbar, context);
     
     cv::Mat frame;
     std::cout << "Press SPACE to capture first image..." << std::endl;

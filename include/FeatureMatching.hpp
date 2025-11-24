@@ -5,6 +5,8 @@
 #include "HarrisDetector.hpp"
 #include "DoGDetector.hpp"
 #include "BlobDetector.hpp"
+#include "SIFTDescriptor.hpp"
+#include "LBPDescriptor.hpp"
 
 struct MatchContext {
     cv::Mat img1;
@@ -24,6 +26,8 @@ struct MatchContext {
     HarrisContext harrisContext;
     DoGContext dogContext;
     BlobContext blobContext;
+
+    SIFTContext siftContext;
 
     int ratioThreshold = 75; // Lowe's ratio test threshold (scaled by 100)
 };
