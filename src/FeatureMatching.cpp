@@ -42,10 +42,12 @@ void onMatchTrackbar(int, void* userData) {
 
     } else if (context->detectorType == "dog") {
         cv::Mat blur1_1, blur1_2, blur2_1, blur2_2;
-        cv::GaussianBlur(context->gray1, blur1_1, cv::Size(context->dogContext.getOddKernelSize(), context->dogContext.getOddKernelSize()), context->dogContext.sigma1);
-        cv::GaussianBlur(context->gray2, blur2_1, cv::Size(context->dogContext.getOddKernelSize(), context->dogContext.getOddKernelSize()), context->dogContext.sigma1);
-        cv::GaussianBlur(context->gray1, blur1_2, cv::Size(context->dogContext.getOddKernelSize(), context->dogContext.getOddKernelSize()), context->dogContext.sigma1 + context->dogContext.getSafeSigmaDiff());
-        cv::GaussianBlur(context->gray2, blur2_2, cv::Size(context->dogContext.getOddKernelSize(), context->dogContext.getOddKernelSize()), context->dogContext.sigma1 + context->dogContext.getSafeSigmaDiff());
+        double sigma1 = context->dogContext.getSigma1();
+        double sigma2 = sigma1 + context->dogContext.getSafeSigmaDiff();
+        cv::GaussianBlur(context->gray1, blur1_1, cv::Size(context->dogContext.getOddKernelSize(), context->dogContext.getOddKernelSize()), sigma1);
+        cv::GaussianBlur(context->gray2, blur2_1, cv::Size(context->dogContext.getOddKernelSize(), context->dogContext.getOddKernelSize()), sigma1);
+        cv::GaussianBlur(context->gray1, blur1_2, cv::Size(context->dogContext.getOddKernelSize(), context->dogContext.getOddKernelSize()), sigma2);
+        cv::GaussianBlur(context->gray2, blur2_2, cv::Size(context->dogContext.getOddKernelSize(), context->dogContext.getOddKernelSize()), sigma2);
 
         cv::subtract(blur1_1, blur1_2, dst1);
         cv::subtract(blur2_1, blur2_2, dst2);

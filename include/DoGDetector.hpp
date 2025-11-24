@@ -7,8 +7,8 @@
 struct DoGContext {
     cv::Mat src;
     cv::Mat gray;
-    int sigma1 = 1;  // Standard deviation for the first Gaussian
-    int sigmaDiff = 1;  // Difference in standard deviation for the second Gaussian
+    int sigma1_x10 = 1;  // Standard deviation for the first Gaussian (scaled by 10)
+    int sigmaDiff_x10 = 5;  // Difference in standard deviation for the second Gaussian
     int kernelSize = 5;  // Size of the Gaussian kernel
     int threshold = 150; // Default value (0-255)
 
@@ -17,8 +17,12 @@ struct DoGContext {
         return std::max(3, odd_ksize);
     }
 
-    int getSafeSigmaDiff() const {
-        return std::max(1, sigmaDiff);
+    double getSafeSigmaDiff() const {
+        return std::max(1, sigmaDiff_x10) / 10.0;
+    }
+
+    double getSigma1() const {
+        return sigma1_x10 / 10.0;
     }
 };
 

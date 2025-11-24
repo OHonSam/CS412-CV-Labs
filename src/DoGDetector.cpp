@@ -39,8 +39,11 @@ void onDoGTrackbar(int, void* userData) {
     // cv::Mat blur2 = applyConvolution(dogContext->gray, gauss2);
 
     cv::Mat blur1, blur2;
-    cv::GaussianBlur(dogContext->gray, blur1, cv::Size(ksize, ksize), dogContext->sigma1);
-    cv::GaussianBlur(dogContext->gray, blur2, cv::Size(ksize, ksize), dogContext->sigma1 + sigmaDiff);
+    double sigma1 = dogContext->getSigma1();
+    double sigma2 = sigma1 + dogContext->getSafeSigmaDiff();
+
+    cv::GaussianBlur(dogContext->gray, blur1, cv::Size(ksize, ksize), sigma1);
+    cv::GaussianBlur(dogContext->gray, blur2, cv::Size(ksize, ksize), sigma2);
 
     // Compute DoG
     cv::Mat dog;
@@ -58,8 +61,8 @@ void onDoGTrackbar(int, void* userData) {
 }
 
 void createDoGTrackbars(const std::string& windowName, DoGContext* ctx, void (*onCallback)(int, void*)) {
-    cv::createTrackbar("Sigma (first kernel)", windowName, &ctx->sigma1, 100, onCallback, ctx);
-    cv::createTrackbar("Sigma Diff (first to second kernel)", windowName, &ctx->sigmaDiff, 100, onCallback, ctx);
+    cv::createTrackbar("Sigma x10 (first kernel)", windowName, &ctx->sigma1_x10, 100, onCallback, ctx);
+    cv::createTrackbar("Sigma Diff x10 (first to second kernel)", windowName, &ctx->sigmaDiff_x10, 100, onCallback, ctx);
     cv::createTrackbar("Kernel Size", windowName, &ctx->kernelSize, 21, onCallback, ctx);
     cv::createTrackbar("Threshold", windowName, &ctx->threshold, 255, onCallback, ctx);
 }
@@ -93,8 +96,8 @@ void detectDoGCamera() {
     }
 
     std::string windowName1 = "DoG Detection";
-    cv::namedWindow(windowName1, cv::WINDOW_GUI_EXPANDED);
     std::string windowName2 = "DoG Response";
+    cv::namedWindow(windowName1, cv::WINDOW_GUI_EXPANDED);
     cv::namedWindow(windowName2, cv::WINDOW_GUI_EXPANDED);
 
     DoGContext* dogContext = new DoGContext();
